@@ -51,7 +51,7 @@ export default function CanvasStage({
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<Point | null>(null);
   const strokeSegmentsRef = useRef<StrokeSegment[]>([]);
-  const clearSignalRef = useRef(false);
+  const clearSignalRef = useRef(clearSignal);
 
   const drawAxis = useCallback(
     (ctx: CanvasRenderingContext2D) => {
@@ -141,11 +141,11 @@ export default function CanvasStage({
   }, [axis, redraw]);
 
   useEffect(() => {
-    if (!clearSignalRef.current) {
-      clearSignalRef.current = true;
+    if (clearSignalRef.current === clearSignal) {
       return;
     }
 
+    clearSignalRef.current = clearSignal;
     strokeSegmentsRef.current = [];
     redraw();
     onClearComplete();
@@ -191,7 +191,7 @@ export default function CanvasStage({
         brushSize,
         tool,
       };
-      strokeSegmentsRef.current = [...strokeSegmentsRef.current, segment];
+      strokeSegmentsRef.current.push(segment);
       drawSegment(ctx, segment);
       drawAxis(ctx);
       lastPointRef.current = currentPoint;

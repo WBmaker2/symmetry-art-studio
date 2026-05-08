@@ -46,6 +46,10 @@ export default function App() {
     setActivityMessage(message);
   }, []);
 
+  const handleClearComplete = useCallback(() => {
+    setActivityMessage('캔버스를 비웠습니다.');
+  }, []);
+
   const statusText = useMemo(
     () => `${axisLabels[axis]} 선택됨. ${activityMessage}`,
     [axis, activityMessage],
@@ -81,7 +85,7 @@ export default function App() {
           brushSize={brushSize}
           tool={tool}
           clearSignal={clearSignal}
-          onClearComplete={() => setActivityMessage('캔버스를 비웠습니다.')}
+          onClearComplete={handleClearComplete}
           onStrokeChange={onStrokeChange}
         />
       </section>

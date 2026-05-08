@@ -1,7 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
+import { canvasContext, resetCanvasMocks, toDataURLMock } from './test/setup';
+
+beforeEach(() => {
+  resetCanvasMocks();
+});
 
 describe('Symmetry Art Studio app shell', () => {
   it('lets students switch symmetry axes and drawing tools', async () => {
@@ -36,5 +41,44 @@ describe('Symmetry Art Studio app shell', () => {
 
     await user.click(screen.getByRole('button', { name: '전체 지우기' }));
     expect(screen.getByRole('status')).toHaveTextContent('캔버스를 비웠습니다');
+  });
+
+  it('keeps canvas content on non-clear rerender', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 300,
+      clientY: 360,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 360,
+      clientY: 420,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 360,
+      clientY: 420,
+    });
+
+    const clearCountBefore = canvasContext.clearRect.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: '파랑' }));
+
+    expect(canvasContext.clearRect).toHaveBeenCalledTimes(clearCountBefore);
+  });
+
+  it('creates a PNG data URL and updates status on save', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'PNG 저장' }));
+
+    expect(toDataURLMock).toHaveBeenCalledWith('image/png');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'PNG 이미지로 저장했습니다.',
+    );
   });
 });
