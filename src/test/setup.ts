@@ -68,6 +68,11 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getBoundingClientRect', {
   configurable: true,
 });
 
+Object.defineProperty(HTMLAnchorElement.prototype, 'click', {
+  value: vi.fn(),
+  configurable: true,
+});
+
 export const resetCanvasMocks = () => {
   vi.clearAllMocks();
 };
