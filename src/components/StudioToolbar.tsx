@@ -45,91 +45,111 @@ export function StudioToolbar({
   onSave,
 }: StudioToolbarProps) {
   return (
-    <aside className="studio-toolbar">
-      <section className="toolbar-group">
-        <h2>대칭축</h2>
-        <div className="axis-buttons" role="group" aria-label="대칭축 선택">
+    <aside className="toolbar" aria-label="대칭 아트 도구">
+      <section
+        className="tool-group"
+        aria-labelledby="axis-control-title"
+      >
+        <h2 id="axis-control-title">대칭축</h2>
+        <div className="segmented-control" role="group" aria-label="대칭축 선택">
           {axisOrder.map((axisMode) => (
             <button
               key={axisMode}
               type="button"
               onClick={() => onAxisChange(axisMode)}
               aria-pressed={axis === axisMode}
-              className={`toggle-btn ${axis === axisMode ? 'is-active' : ''}`}
+              className="segment-button"
             >
-              {axisMode === 'diagonal' && Slash ? <Slash /> : null}
               {axisLabels[axisMode]}
             </button>
           ))}
         </div>
       </section>
 
-      <section className="toolbar-group">
-        <h2>붓 도구</h2>
-        <div className="tool-row">
-          <button
-            type="button"
-            className={`tool-btn ${tool === 'brush' ? 'is-active' : ''}`}
-            aria-pressed={tool === 'brush'}
-            onClick={() => onToolChange('brush')}
-          >
-            <Brush />
-            붓
-          </button>
+      <section
+        className="tool-group"
+        aria-labelledby="color-control-title"
+      >
+        <h2 id="color-control-title">색상</h2>
+        <div className="swatch-row" role="group" aria-label="색상 선택">
           {colors.map((swatch) => (
             <button
               key={swatch.value}
               type="button"
-              className={`swatch-btn ${
-                tool === 'brush' && color === swatch.value ? 'is-active' : ''
-              }`}
+              className="color-swatch"
               aria-label={swatch.name}
               aria-pressed={tool === 'brush' && color === swatch.value}
               onClick={() => {
                 onColorChange(swatch.value);
                 onToolChange('brush');
               }}
-              style={{ background: swatch.value }}
+              style={{ backgroundColor: swatch.value }}
             />
           ))}
         </div>
       </section>
 
-      <section className="toolbar-group">
-        <label htmlFor="brush-size">펜 굵기</label>
+      <section
+        className="tool-group"
+        aria-labelledby="brush-size-title"
+      >
+        <h2 id="brush-size-title">
+          <Brush aria-hidden="true" size={18} />
+          펜 굵기
+        </h2>
+        <span>{brushSize}px</span>
         <input
           id="brush-size"
           type="range"
-          min={1}
-          max={30}
+          min={2}
+          max={32}
+          step={1}
           value={brushSize}
           onChange={(event) => onBrushSizeChange(Number(event.target.value))}
           aria-label="펜 굵기"
         />
       </section>
 
-      <section className="toolbar-group">
-        <div className="action-row">
+      <section
+        className="tool-group compact-tools"
+        aria-label="편집 도구"
+      >
+        <h2 id="edit-tools-title" className="sr-only">
+          편집 도구
+        </h2>
+        <div className="action-row" aria-labelledby="edit-tools-title">
           <button
             type="button"
-            className={`action-btn ${tool === 'eraser' ? 'is-active' : ''}`}
-            onClick={() => onToolChange('eraser')}
+            className="icon-button"
+            onClick={() => onToolChange(tool === 'eraser' ? 'brush' : 'eraser')}
             aria-pressed={tool === 'eraser'}
+            title="지우개"
           >
-            <Eraser />
+            <Eraser aria-hidden="true" size={18} />
             지우개
           </button>
-          <button type="button" className="action-btn" onClick={onClear}>
-            <RotateCcw />
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onClear}
+            title="전체 지우기"
+          >
+            <RotateCcw aria-hidden="true" size={18} />
             전체 지우기
           </button>
-          <button type="button" className="action-btn" onClick={onSave}>
-            <Download />
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onSave}
+            title="PNG 저장"
+          >
+            <Download aria-hidden="true" size={18} />
             PNG 저장
           </button>
         </div>
       </section>
       <p className="axis-note">
+        <Slash aria-hidden="true" size={16} />
         선택한 축을 기준으로 같은 길이와 방향 관계가 반사됩니다.
       </p>
     </aside>
