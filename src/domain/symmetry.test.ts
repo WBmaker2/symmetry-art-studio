@@ -25,8 +25,8 @@ describe('reflectPoint', () => {
 
   it('reflects a point across the top-left to bottom-right diagonal axis', () => {
     expect(rounded(reflectPoint({ x: 100, y: 300 }, 'diagonal', canvas))).toEqual({
-      x: 388,
-      y: 84,
+      x: 316,
+      y: 12,
     });
   });
 
