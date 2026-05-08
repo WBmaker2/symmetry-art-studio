@@ -81,4 +81,12 @@ describe('Symmetry Art Studio app shell', () => {
       'PNG 이미지로 저장했습니다.',
     );
   });
+
+  it('shows classroom learning prompts tied to symmetry and art standards', () => {
+    render(<App />);
+
+    expect(screen.getByText('[6수03-03]')).toBeInTheDocument();
+    expect(screen.getByText('[6미02-02]')).toBeInTheDocument();
+    expect(screen.getByText('관찰 질문')).toBeInTheDocument();
+  });
 });

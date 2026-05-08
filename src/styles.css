@@ -1,40 +1,217 @@
 .app-shell {
-  padding: 1rem;
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding: 1rem 1.25rem 1.5rem;
+  box-sizing: border-box;
 }
 
 .studio-heading {
   margin-bottom: 1rem;
 }
 
+.subject-line {
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
 .workspace {
   display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(500px, 1fr);
   gap: 1rem;
+  align-items: start;
   margin-bottom: 1rem;
 }
 
-.studio-toolbar {
+.toolbar {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem;
   display: grid;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
-.axis-buttons,
-.tool-row,
-.action-row {
-  display: flex;
-  flex-wrap: wrap;
+.tool-group {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.tool-group h2 {
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.segmented-control {
+  display: grid;
   gap: 0.5rem;
 }
 
-.axis-note {
-  margin: 0;
+.segment-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  color: var(--text);
+  text-align: left;
 }
 
-.canvas-preview {
-  border: 1px dashed #cbd5e1;
-  padding: 1rem;
-  min-height: 8rem;
+.segment-button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.color-swatch {
+  width: 2rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.25),
+    0 1px 3px rgba(15, 23, 42, 0.25);
+  padding: 0;
+}
+
+.color-swatch[aria-pressed='true'] {
+  border-color: var(--text-h);
+  transform: scale(1.04);
+}
+
+.tool-group input[type='range'] {
+  width: 100%;
+}
+
+.range-label {
+  color: var(--text-h);
+  font-size: 0.95rem;
+}
+
+.compact-tools .action-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.icon-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.axis-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.canvas-stage {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fffdf8;
+  display: grid;
+  justify-items: center;
+  align-items: stretch;
+  padding: 0.75rem;
+}
+
+.canvas-stage canvas {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: white;
+}
+
+.learning-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: #f8fafc;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.learning-panel section {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.learning-panel h2 {
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.standard-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.standard-list > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.standard-list dt {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.standard-list dd {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.learning-panel ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
 }
 
 .sr-status {
-  font-size: 0.9rem;
+  margin: 0;
+  font-size: 0.95rem;
+  padding: 0.55rem 0.65rem;
+  border-left: 3px solid var(--accent);
+  background: #f8f5ff;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  padding: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 1060px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-stage,
+  .toolbar,
+  .learning-panel {
+    width: 100%;
+  }
 }

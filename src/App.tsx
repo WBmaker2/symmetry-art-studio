@@ -6,6 +6,7 @@ import {
   type ColorSwatch,
   type DrawingTool,
 } from './components/StudioToolbar';
+import { LearningPanel } from './components/LearningPanel';
 import { axisLabels, type AxisMode } from './domain/symmetry';
 import './styles.css';
 
@@ -88,6 +89,7 @@ export default function App() {
           onClearComplete={handleClearComplete}
           onStrokeChange={onStrokeChange}
         />
+        <LearningPanel activityMessage={activityMessage} />
       </section>
 
       <p className="sr-status" role="status" aria-live="polite">
