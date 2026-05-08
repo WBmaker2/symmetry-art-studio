@@ -43,6 +43,14 @@ describe('Symmetry Art Studio app shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent('캔버스를 비웠습니다');
   });
 
+  it('uses a square drawing surface so diagonal symmetry stays visible', () => {
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스') as HTMLCanvasElement;
+
+    expect(canvas.width).toBe(canvas.height);
+  });
+
   it('keeps canvas content on non-clear rerender', async () => {
     const user = userEvent.setup();
     render(<App />);

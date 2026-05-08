@@ -34,8 +34,8 @@ type StrokeSegment = {
 };
 
 const canvasSize: CanvasSize = {
-  width: 1200,
-  height: 760,
+  width: 960,
+  height: 960,
 };
 
 export default function CanvasStage({
