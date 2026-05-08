@@ -15,11 +15,36 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     throw new Error('Canvas bounding box was not available');
   }
 
-  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.4);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.32, box.y + box.height * 0.48);
-  await page.mouse.move(box.x + box.width * 0.38, box.y + box.height * 0.37);
-  await page.mouse.up();
+  const dispatchPointer = async (
+    type: 'pointerdown' | 'pointermove' | 'pointerup',
+    x: number,
+    y: number,
+    buttons: number,
+    pointerType: 'pen' | 'mouse' = 'pen',
+  ) => {
+    await canvas.dispatchEvent(type, {
+      pointerId: 1,
+      pointerType,
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      buttons,
+      bubbles: true,
+      cancelable: true,
+    });
+  };
+
+  const startX = box.x + box.width * 0.25;
+  const startY = box.y + box.height * 0.4;
+  const midX = box.x + box.width * 0.32;
+  const midY = box.y + box.height * 0.48;
+  const endX = box.x + box.width * 0.38;
+  const endY = box.y + box.height * 0.37;
+
+  await dispatchPointer('pointerdown', startX, startY, 1);
+  await dispatchPointer('pointermove', midX, midY, 1);
+  await dispatchPointer('pointermove', endX, endY, 1);
+  await dispatchPointer('pointerup', endX, endY, 0);
 
   await expect(page.getByRole('status')).toContainText('획을 완성했습니다');
 
