@@ -27,4 +27,14 @@ describe('Symmetry Art Studio app shell', () => {
       'false',
     );
   });
+
+  it('renders the drawing canvas and clear command', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.getByLabelText('대칭 그림 캔버스')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '전체 지우기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('캔버스를 비웠습니다');
+  });
 });

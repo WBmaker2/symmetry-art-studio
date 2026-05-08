@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import CanvasStage from './components/CanvasStage';
 import {
   StudioToolbar,
   type ColorSwatch,
@@ -22,11 +23,32 @@ export default function App() {
   const [color, setColor] = useState(colors[0].value);
   const [brushSize, setBrushSize] = useState(10);
   const [tool, setTool] = useState<DrawingTool>('brush');
+  const [clearSignal, setClearSignal] = useState(0);
+  const [activityMessage, setActivityMessage] = useState(
+    '세로 대칭축을 기준으로 시작해 보세요.',
+  );
+
+  const handleSave = useCallback(() => {
+    window.dispatchEvent(new Event('symmetry-art-save-request'));
+  }, []);
+
+  const onAxisChange = useCallback((nextAxis: AxisMode) => {
+    setAxis(nextAxis);
+    setActivityMessage(`${axisLabels[nextAxis]}으로 바꾸었습니다.`);
+  }, []);
+
+  const onClear = useCallback(() => {
+    setClearSignal((value) => value + 1);
+    setActivityMessage('캔버스를 비웠습니다.');
+  }, []);
+
+  const onStrokeChange = useCallback((message: string) => {
+    setActivityMessage(message);
+  }, []);
 
   const statusText = useMemo(
-    () =>
-      `${axisLabels[axis]} 선택됨. ${tool === 'eraser' ? '지우개' : '붓'} 도구로 작업 중입니다.`,
-    [axis, tool],
+    () => `${axisLabels[axis]} 선택됨. ${activityMessage}`,
+    [axis, activityMessage],
   );
 
   return (
@@ -46,14 +68,22 @@ export default function App() {
           brushSize={brushSize}
           tool={tool}
           colors={colors}
-          onAxisChange={setAxis}
+          onAxisChange={onAxisChange}
           onColorChange={setColor}
           onBrushSizeChange={setBrushSize}
           onToolChange={setTool}
-          onClear={() => undefined}
-          onSave={() => undefined}
+          onClear={onClear}
+          onSave={handleSave}
         />
-        <div className="canvas-preview">캔버스 연결 준비 영역</div>
+        <CanvasStage
+          axis={axis}
+          color={color}
+          brushSize={brushSize}
+          tool={tool}
+          clearSignal={clearSignal}
+          onClearComplete={() => setActivityMessage('캔버스를 비웠습니다.')}
+          onStrokeChange={onStrokeChange}
+        />
       </section>
 
       <p className="sr-status" role="status" aria-live="polite">
