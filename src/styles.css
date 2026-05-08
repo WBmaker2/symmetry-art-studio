@@ -1,0 +1,40 @@
+.app-shell {
+  padding: 1rem;
+}
+
+.studio-heading {
+  margin-bottom: 1rem;
+}
+
+.workspace {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.studio-toolbar {
+  display: grid;
+  gap: 1rem;
+}
+
+.axis-buttons,
+.tool-row,
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.axis-note {
+  margin: 0;
+}
+
+.canvas-preview {
+  border: 1px dashed #cbd5e1;
+  padding: 1rem;
+  min-height: 8rem;
+}
+
+.sr-status {
+  font-size: 0.9rem;
+}
