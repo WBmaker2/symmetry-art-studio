@@ -27,6 +27,7 @@ type CanvasStageProps = {
 type StrokeSegment = {
   start: Point;
   end: Point;
+  axis: AxisMode;
   color: string;
   brushSize: number;
   tool: DrawingTool;
@@ -70,8 +71,8 @@ export default function CanvasStage({
 
   const drawSegment = useCallback(
     (ctx: CanvasRenderingContext2D, segment: StrokeSegment) => {
-      const reflectedStart = reflectPoint(segment.start, axis, canvasSize);
-      const reflectedEnd = reflectPoint(segment.end, axis, canvasSize);
+      const reflectedStart = reflectPoint(segment.start, segment.axis, canvasSize);
+      const reflectedEnd = reflectPoint(segment.end, segment.axis, canvasSize);
       const pairs: Array<[Point, Point]> = [
         [segment.start, segment.end],
         [reflectedStart, reflectedEnd],
@@ -96,7 +97,7 @@ export default function CanvasStage({
 
       ctx.restore();
     },
-    [axis],
+    [],
   );
 
   const redraw = useCallback(() => {
@@ -185,15 +186,17 @@ export default function CanvasStage({
       const segment: StrokeSegment = {
         start: startPoint,
         end: currentPoint,
+        axis,
         color,
         brushSize,
         tool,
       };
       strokeSegmentsRef.current = [...strokeSegmentsRef.current, segment];
       drawSegment(ctx, segment);
+      drawAxis(ctx);
       lastPointRef.current = currentPoint;
     },
-    [brushSize, color, drawSegment, getCanvasPoint, tool],
+    [axis, brushSize, color, drawAxis, drawSegment, getCanvasPoint, tool],
   );
 
   const handlePointerUp = useCallback(
