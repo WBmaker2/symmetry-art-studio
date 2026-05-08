@@ -82,6 +82,18 @@ describe('Symmetry Art Studio app shell', () => {
     );
   });
 
+  it('updates learning panel current work message on axis change', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const panel = screen.getByLabelText('수업 관찰 질문');
+    await user.click(screen.getByRole('button', { name: '가로 대칭축' }));
+
+    expect(screen.getByRole('status')).toHaveTextContent('가로 대칭축으로 바꾸었습니다.');
+    expect(screen.getByText('가로 대칭축으로 바꾸었습니다.')).toBeInTheDocument();
+    expect(panel).toHaveTextContent('가로 대칭축으로 바꾸었습니다.');
+  });
+
   it('shows classroom learning prompts tied to symmetry and art standards', () => {
     render(<App />);
 

@@ -97,17 +97,20 @@ export function StudioToolbar({
           <Brush aria-hidden="true" size={18} />
           펜 굵기
         </h2>
-        <span>{brushSize}px</span>
-        <input
-          id="brush-size"
-          type="range"
-          min={2}
-          max={32}
-          step={1}
-          value={brushSize}
-          onChange={(event) => onBrushSizeChange(Number(event.target.value))}
-          aria-label="펜 굵기"
-        />
+        <label className="range-label" htmlFor="brush-size">
+          <span>굵기</span>
+          <input
+            id="brush-size"
+            type="range"
+            min={2}
+            max={32}
+            step={1}
+            value={brushSize}
+            onChange={(event) => onBrushSizeChange(Number(event.target.value))}
+            aria-label="펜 굵기"
+          />
+          <span>{brushSize}px</span>
+        </label>
       </section>
 
       <section
