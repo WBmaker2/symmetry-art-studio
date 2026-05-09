@@ -56,10 +56,10 @@ async function fetchWithCurlFallback(url, { outputToDevNull = false } = {}) {
     return outputToDevNull ? null : response.text();
   } catch (fetchError) {
     try {
-      const options = ['-sS', '-L', '--fail', '--'];
+      const options = ['-sS', '-L', '--fail'];
       const commandArgs = outputToDevNull
-        ? [...options, '--output', '/dev/null', url.toString()]
-        : [...options, url.toString()];
+        ? [...options, '--output', '/dev/null', '--', url.toString()]
+        : [...options, '--', url.toString()];
 
       const result = await execFileAsync('curl', commandArgs, {
         encoding: 'utf8',

@@ -49,13 +49,13 @@ https://wbmaker2.github.io/symmetry-art-studio/
 
 ## 배포 검증
 
-배포 URL 공개 페이지에서 앱 제목과 번들 자산 응답을 검증하려면 다음 명령을 실행합니다.
+배포 URL 공개 페이지가 현재 `dist/index.html`의 번들 자산 경로와 일치하는지 검증하려면 다음 명령을 실행합니다.
 
 ```bash
 npm run verify:pages
 ```
 
-CI 배포 검증은 배포된 HTML이 `dist/index.html`에 있는 빌드 산출물 자산 경로와 일치하는지 확인합니다.  
+CI 배포 검증도 배포 직후 업로드한 빌드 산출물의 `index.html`을 기준으로 원격 HTML과 자산 응답을 확인합니다.
 필요하면 다른 기대 산출물 경로를 지정할 수 있습니다.
 
 ```bash
