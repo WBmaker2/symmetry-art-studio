@@ -3,11 +3,13 @@ import type { AxisMode } from '../domain/symmetry';
 type LearningPanelProps = {
   activityMessage: string;
   visitedAxes: AxisMode[];
+  lastShareMessage: string;
 };
 
 export function LearningPanel({
   activityMessage,
   visitedAxes,
+  lastShareMessage,
 }: LearningPanelProps) {
   const missions = [
     {
@@ -83,6 +85,18 @@ export function LearningPanel({
       <section>
         <h2>현재 작업</h2>
         <p>{activityMessage}</p>
+      </section>
+
+      <section>
+        <h2>공유 문구</h2>
+        <textarea
+          readOnly
+          className="share-message"
+          value={lastShareMessage}
+          onFocus={(event) => event.currentTarget.select()}
+          aria-label="공유 문구"
+          placeholder="공유 문구 복사 후 텍스트가 여기에 표시됩니다."
+        />
       </section>
     </aside>
   );

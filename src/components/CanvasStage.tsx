@@ -132,6 +132,8 @@ export default function CanvasStage({
   const activeStrokeRef = useRef<StrokeAction | null>(null);
   const actionsRef = useRef<CanvasAction[]>([]);
   const undoneActionsRef = useRef<CanvasAction[]>([]);
+  const artworkCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const artworkContextRef = useRef<CanvasRenderingContext2D | null>(null);
   const clearSignalRef = useRef(clearSignal);
   const undoSignalRef = useRef(undoSignal);
   const redoSignalRef = useRef(redoSignal);
@@ -283,6 +285,33 @@ export default function CanvasStage({
     [],
   );
 
+  const getArtworkCanvas = useCallback(
+    (ownerDocument: Document, width: number, height: number) => {
+      if (!artworkCanvasRef.current) {
+        const createdCanvas = ownerDocument.createElement('canvas');
+        artworkCanvasRef.current = createdCanvas;
+        artworkContextRef.current = createdCanvas.getContext('2d');
+      }
+
+      const artworkCanvas = artworkCanvasRef.current;
+      if (!artworkCanvas) {
+        return null;
+      }
+
+      if (artworkCanvas.width !== width || artworkCanvas.height !== height) {
+        artworkCanvas.width = width;
+        artworkCanvas.height = height;
+      }
+
+      if (!artworkContextRef.current) {
+        artworkContextRef.current = artworkCanvas.getContext('2d');
+      }
+
+      return artworkCanvas;
+    },
+    [],
+  );
+
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -297,10 +326,13 @@ export default function CanvasStage({
     const actionsWithActive: CanvasAction[] = activeStrokeRef.current
       ? [...actionsRef.current, activeStrokeRef.current]
       : actionsRef.current;
-    const artworkCanvas = canvas.ownerDocument.createElement('canvas');
-    artworkCanvas.width = canvas.width;
-    artworkCanvas.height = canvas.height;
-    const artworkCtx = artworkCanvas.getContext('2d');
+    const artworkCanvas = getArtworkCanvas(canvas.ownerDocument, canvas.width, canvas.height);
+    const artworkCtx = artworkContextRef.current;
+
+    if (artworkCtx) {
+      artworkCtx.fillStyle = '#fffdf8';
+      artworkCtx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     const drawArtworkAction = (
       layerCtx: CanvasRenderingContext2D,
@@ -324,14 +356,14 @@ export default function CanvasStage({
 
     drawGrid(ctx);
 
-    if (artworkCtx) {
+    if (artworkCtx && artworkCanvas) {
       actionsWithActive.forEach((action) => drawArtworkAction(artworkCtx, action));
       ctx.drawImage(artworkCanvas, 0, 0);
     }
 
     actionsWithActive.forEach(drawPointActionLayer);
     drawAxis(ctx);
-  }, [drawAxis, drawGrid, drawSegment, drawPointAction, shouldShowDistanceGuides]);
+  }, [drawAxis, drawGrid, drawSegment, drawPointAction, getArtworkCanvas, shouldShowDistanceGuides]);
 
   const reportHistory = useCallback(() => {
     onHistoryChange({

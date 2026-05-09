@@ -384,6 +384,8 @@ describe('Symmetry Art Studio app shell', () => {
   it('copies share text to clipboard and confirms in status messages', async () => {
     const user = userEvent.setup();
     let calledWithCorrectReceiver = false;
+    const expectedShareMessage =
+      '마법의 데칼코마니에서 세로 대칭축 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.';
     const originalClipboard = setClipboardWriteText(() => Promise.resolve());
     try {
       const writeText = vi.fn(function (this: Clipboard, _text: string) {
@@ -401,18 +403,16 @@ describe('Symmetry Art Studio app shell', () => {
 
       await user.click(screen.getByRole('button', { name: '공유 문구 복사' }));
 
-      expect(writeText).toHaveBeenCalledWith(
-        '마법의 데칼코마니에서 세로 대칭축 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.',
-      );
+      expect(writeText).toHaveBeenCalledWith(expectedShareMessage);
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent(
           '공유 문구를 클립보드에 복사했습니다.',
         ),
       );
+      expect(
+        screen.getByRole('textbox', { name: '공유 문구' }),
+      ).toHaveDisplayValue(expectedShareMessage);
       expect(calledWithCorrectReceiver).toBe(true);
-      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
-        '공유 문구를 클립보드에 복사했습니다.',
-      );
     } finally {
       restoreClipboard(originalClipboard);
     }
@@ -420,6 +420,8 @@ describe('Symmetry Art Studio app shell', () => {
 
   it('shows fallback status when clipboard write fails', async () => {
     const user = userEvent.setup();
+    const expectedShareMessage =
+      '마법의 데칼코마니에서 세로 대칭축 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.';
     const originalClipboard = setClipboardWriteText(() => Promise.resolve());
     try {
       Object.defineProperty(navigator, 'clipboard', {
@@ -435,11 +437,14 @@ describe('Symmetry Art Studio app shell', () => {
 
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent(
-          '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+          '공유 문구 복사에 실패했습니다. 직접 복사해 주세요.',
         ),
       );
-      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
-        '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+      expect(
+        screen.getByRole('textbox', { name: '공유 문구' }),
+      ).toHaveDisplayValue(expectedShareMessage);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        expectedShareMessage,
       );
     } finally {
       restoreClipboard(originalClipboard);
@@ -448,6 +453,8 @@ describe('Symmetry Art Studio app shell', () => {
 
   it('shows clipboard fallback when clipboard is unavailable', async () => {
     const user = userEvent.setup();
+    const expectedShareMessage =
+      '마법의 데칼코마니에서 세로 대칭축 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.';
     const originalClipboard = setClipboardWriteText(undefined);
     try {
       Object.defineProperty(navigator, 'clipboard', {
@@ -461,15 +468,51 @@ describe('Symmetry Art Studio app shell', () => {
 
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent(
-          '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+          '클립보드에 복사할 수 없어서 직접 복사해 주세요.',
         ),
       );
-      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
-        '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+      expect(
+        screen.getByRole('textbox', { name: '공유 문구' }),
+      ).toHaveDisplayValue(expectedShareMessage);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        expectedShareMessage,
       );
     } finally {
       restoreClipboard(originalClipboard);
     }
+  });
+
+  it('reuses temporary artwork canvas during redraw', () => {
+    const createElementSpy = vi.spyOn(document, 'createElement');
+
+    render(<App />);
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 220,
+      clientY: 220,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 250,
+      clientY: 260,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 280,
+      clientY: 280,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 280,
+      clientY: 280,
+    });
+
+    const canvasCreations = createElementSpy.mock.calls.filter(
+      ([type]) => type === 'canvas',
+    );
+    expect(canvasCreations).toHaveLength(2);
   });
 
   it('updates learning panel current work message on axis change', async () => {

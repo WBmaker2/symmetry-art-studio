@@ -270,6 +270,19 @@ button {
   line-height: 1.5;
 }
 
+.share-message {
+  width: 100%;
+  min-height: 64px;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #ffffff;
+  font: inherit;
+  line-height: 1.45;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

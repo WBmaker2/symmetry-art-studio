@@ -38,6 +38,7 @@ export default function App() {
   const [activityMessage, setActivityMessage] = useState(
     '세로 대칭축을 기준으로 시작해 보세요.',
   );
+  const [lastShareMessage, setLastShareMessage] = useState('');
   const now = useCallback(() => new Date(), []);
 
   const shareText = useCallback(
@@ -53,19 +54,20 @@ export default function App() {
   const handleShareCopy = useCallback(async () => {
     setClearPending(false);
     const message = shareText();
+    setLastShareMessage(message);
     if (!navigator.clipboard?.writeText) {
       setActivityMessage(
-        '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+        `${message} 문구를 클립보드에 복사할 수 없어서 직접 복사해 주세요.`,
       );
       return;
     }
 
     try {
       await navigator.clipboard.writeText(message);
-      setActivityMessage('공유 문구를 클립보드에 복사했습니다.');
+      setActivityMessage(`${message}\n공유 문구를 클립보드에 복사했습니다.`);
     } catch (_error) {
       setActivityMessage(
-        '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+        `${message}\n공유 문구 복사에 실패했습니다. 직접 복사해 주세요.`,
       );
     }
   }, [shareText]);
@@ -246,6 +248,7 @@ export default function App() {
         <LearningPanel
           activityMessage={activityMessage}
           visitedAxes={visitedAxes}
+          lastShareMessage={lastShareMessage}
         />
       </section>
 
