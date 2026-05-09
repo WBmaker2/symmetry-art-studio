@@ -10,6 +10,7 @@ import {
   Grid2x2,
   Ruler,
   Target,
+  Share2,
 } from 'lucide-react';
 
 import { axisLabels, type AxisMode } from '../domain/symmetry';
@@ -44,6 +45,7 @@ type StudioToolbarProps = {
   canRedo: boolean;
   clearPending: boolean;
   onSave: () => void;
+  onShare: () => Promise<void> | void;
 };
 
 const axisOrder: AxisMode[] = ['vertical', 'horizontal', 'diagonal'];
@@ -98,6 +100,7 @@ export function StudioToolbar({
   canRedo,
   clearPending,
   onSave,
+  onShare,
 }: StudioToolbarProps) {
   const handleAxisKeyDown = (
     event: KeyboardEvent<HTMLButtonElement>,
@@ -276,10 +279,21 @@ export function StudioToolbar({
             type="button"
             className="icon-button"
             onClick={onSave}
-            title="PNG 저장"
+            title="작품 카드 저장"
           >
             <Download aria-hidden="true" size={18} />
-            PNG 저장
+            작품 카드 저장
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => {
+              void onShare();
+            }}
+            title="공유 문구 복사"
+          >
+            <Share2 aria-hidden="true" size={18} />
+            공유 문구 복사
           </button>
         </div>
       </section>

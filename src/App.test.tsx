@@ -7,12 +7,45 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import App from './App';
 import { canvasContext, resetCanvasMocks, toDataURLMock } from './test/setup';
 
+type ClipboardPayload = {
+  writeText: (text: string) => Promise<void>;
+} | undefined;
+
+const setClipboardWriteText = (
+  writeText: ((text: string) => Promise<void>) | undefined,
+) => {
+  const original = (navigator as Navigator & { clipboard?: ClipboardPayload }).clipboard;
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: writeText ? { writeText } : undefined,
+  });
+  return original;
+};
+
+const restoreClipboard = (clipboardValue: ClipboardPayload) => {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: clipboardValue,
+  });
+};
+
 beforeEach(() => {
   resetCanvasMocks();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('Symmetry Art Studio app shell', () => {
@@ -320,16 +353,118 @@ describe('Symmetry Art Studio app shell', () => {
     expect(canvasContext.lineTo).toHaveBeenCalledWith(260, 260);
   });
 
-  it('creates a PNG data URL and updates status on save', async () => {
+  it('creates an artwork card data URL with an informative filename', async () => {
     const user = userEvent.setup();
+    const createElementSpy = vi.spyOn(document, 'createElement');
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: 'PNG 저장' }));
+    await user.click(screen.getByRole('button', { name: '작품 카드 저장' }));
+
+    const anchor = createElementSpy.mock.results
+      .map((result) => result.value)
+      .find(
+        (value): value is HTMLAnchorElement =>
+          !!value && typeof value === 'object' && (value as Element).tagName === 'A',
+      );
 
     expect(toDataURLMock).toHaveBeenCalledWith('image/png');
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'PNG 이미지로 저장했습니다.',
+    expect(anchor).toBeDefined();
+    expect(anchor?.download).toMatch(
+      /symmetry-art-studio-\d{4}-\d{2}-\d{2}-vertical\.png$/,
     );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '세로 대칭축 작품 카드를 저장했습니다.',
+    );
+    expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
+      '세로 대칭축 작품 카드를 저장했습니다.',
+    );
+    expect(anchor?.href).toBe('data:image/png;base64,symmetry-art-studio');
+  });
+
+  it('copies share text to clipboard and confirms in status messages', async () => {
+    const user = userEvent.setup();
+    const originalClipboard = setClipboardWriteText(() => Promise.resolve());
+    try {
+      const writeText = vi.fn((_text: string) => Promise.resolve());
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText,
+        },
+      });
+
+      render(<App />);
+
+      await user.click(screen.getByRole('button', { name: '공유 문구 복사' }));
+
+      expect(writeText).toHaveBeenCalledWith(
+        '마법의 데칼코마니에서 세로 대칭축 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.',
+      );
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          '공유 문구를 클립보드에 복사했습니다.',
+        ),
+      );
+      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
+        '공유 문구를 클립보드에 복사했습니다.',
+      );
+    } finally {
+      restoreClipboard(originalClipboard);
+    }
+  });
+
+  it('shows fallback status when clipboard write fails', async () => {
+    const user = userEvent.setup();
+    const originalClipboard = setClipboardWriteText(() => Promise.resolve());
+    try {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: () => Promise.reject(new Error('No permission')),
+        },
+      });
+
+      render(<App />);
+
+      await user.click(screen.getByRole('button', { name: '공유 문구 복사' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+        ),
+      );
+      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
+        '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+      );
+    } finally {
+      restoreClipboard(originalClipboard);
+    }
+  });
+
+  it('shows clipboard fallback when clipboard is unavailable', async () => {
+    const user = userEvent.setup();
+    const originalClipboard = setClipboardWriteText(undefined);
+    try {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: undefined,
+      });
+
+      render(<App />);
+
+      await user.click(screen.getByRole('button', { name: '공유 문구 복사' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+        ),
+      );
+      expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
+        '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+      );
+    } finally {
+      restoreClipboard(originalClipboard);
+    }
   });
 
   it('updates learning panel current work message on axis change', async () => {

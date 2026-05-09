@@ -7,6 +7,7 @@ import {
 
 import {
   getAxisLine,
+  axisLabels,
   getSymmetryPointGuide,
   type AxisMode,
   type CanvasSize,
@@ -32,6 +33,7 @@ type CanvasStageProps = {
   onClearComplete: () => void;
   onStrokeChange: (message: string) => void;
   onHistoryChange: (state: { canUndo: boolean; canRedo: boolean }) => void;
+  now?: () => Date;
 };
 
 type StrokeSegment = {
@@ -67,6 +69,18 @@ const canvasSize: CanvasSize = {
 };
 
 const gridSpacing = 40;
+const cardPadding = 28;
+const titleHeight = 64;
+
+function to2Digits(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function formatExportDate(now: Date): string {
+  return `${now.getFullYear()}-${to2Digits(now.getMonth() + 1)}-${to2Digits(
+    now.getDate(),
+  )}`;
+}
 
 function getPointLabel(index: number): string {
   const letterCode = 'A'.charCodeAt(0) + (index % 26);
@@ -108,6 +122,7 @@ export default function CanvasStage({
   onClearComplete,
   onStrokeChange,
   onHistoryChange,
+  now = () => new Date(),
 }: CanvasStageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef(false);
@@ -526,12 +541,65 @@ export default function CanvasStage({
     }
 
     redraw();
-    const link = document.createElement('a');
-    link.download = 'symmetry-art-studio.png';
-    link.href = canvas.toDataURL('image/png');
+    const exportCanvas = canvas.ownerDocument.createElement('canvas');
+    exportCanvas.width = canvas.width + cardPadding * 2;
+    exportCanvas.height = canvas.height + cardPadding * 2 + titleHeight;
+    const exportCtx = exportCanvas.getContext('2d');
+
+    if (!exportCtx) {
+      onSaveComplete('작품 카드를 저장하지 못했습니다.');
+      return;
+    }
+
+    const exportDate = formatExportDate(now());
+
+    exportCtx.fillStyle = '#ffffff';
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    exportCtx.fillStyle = '#0f172a';
+    exportCtx.textAlign = 'center';
+    exportCtx.textBaseline = 'top';
+    exportCtx.font =
+      'bold 30px Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    exportCtx.fillText(
+      '마법의 데칼코마니: 대칭 아트 스튜디오',
+      exportCanvas.width / 2,
+      16,
+    );
+
+    exportCtx.fillStyle = '#334155';
+    exportCtx.font =
+      '14px Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    exportCtx.textAlign = 'left';
+    exportCtx.fillText(`${axisLabels[axis]} / Symmetry Art Studio`, cardPadding, 56);
+    exportCtx.textAlign = 'right';
+    exportCtx.fillText(exportDate, exportCanvas.width - cardPadding, 56);
+
+    exportCtx.drawImage(canvas, cardPadding, titleHeight + 10);
+    exportCtx.strokeStyle = '#e2e8f0';
+    exportCtx.lineWidth = 2;
+    exportCtx.strokeRect(cardPadding, titleHeight + 10, canvas.width, canvas.height);
+
+    exportCtx.strokeStyle = '#94a3b8';
+    exportCtx.setLineDash([6, 5]);
+    exportCtx.beginPath();
+    exportCtx.moveTo(cardPadding, titleHeight + 4);
+    exportCtx.lineTo(exportCanvas.width - cardPadding, titleHeight + 4);
+    exportCtx.stroke();
+    exportCtx.setLineDash([]);
+
+    exportCtx.textAlign = 'left';
+    exportCtx.fillStyle = '#0f172a';
+    exportCtx.font =
+      '12px Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    exportCtx.fillText('Symmetry Art Studio', cardPadding, exportCanvas.height - cardPadding);
+
+    const link = canvas.ownerDocument.createElement('a');
+    link.download = `symmetry-art-studio-${exportDate}-${axis}.png`;
+    link.href = exportCanvas.toDataURL('image/png');
     link.click();
-    onSaveComplete('PNG 이미지로 저장했습니다.');
-  }, [onSaveComplete, redraw]);
+    onSaveComplete(`${axisLabels[axis]} 작품 카드를 저장했습니다.`);
+  }, [axis, onSaveComplete, redraw, now]);
 
   useEffect(() => {
     if (saveSignalRef.current === saveSignal) {

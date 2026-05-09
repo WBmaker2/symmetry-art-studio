@@ -38,10 +38,38 @@ export default function App() {
   const [activityMessage, setActivityMessage] = useState(
     '세로 대칭축을 기준으로 시작해 보세요.',
   );
+  const now = useCallback(() => new Date(), []);
+
+  const shareText = useCallback(
+    () =>
+      `마법의 데칼코마니에서 ${axisLabels[axis]} 작품을 완성했습니다. 원본과 대칭 그림이 같은 거리에 있는지 살펴보세요.`,
+    [axis],
+  );
 
   const handleSave = useCallback(() => {
     setSaveSignal((value) => value + 1);
   }, []);
+
+  const handleShareCopy = useCallback(async () => {
+    setClearPending(false);
+    const message = shareText();
+    const clipboardWriteText = navigator.clipboard?.writeText;
+    if (!clipboardWriteText) {
+      setActivityMessage(
+        '공유 문구 복사 버튼은 동작했지만 클립보드 API를 사용할 수 없습니다. 문구를 직접 복사해 주세요.',
+      );
+      return;
+    }
+
+    try {
+      await clipboardWriteText(message);
+      setActivityMessage('공유 문구를 클립보드에 복사했습니다.');
+    } catch (_error) {
+      setActivityMessage(
+        '공유 문구 복사에 실패했습니다. 문구를 직접 복사해 주세요.',
+      );
+    }
+  }, [shareText]);
 
   const onAxisChange = useCallback((nextAxis: AxisMode) => {
     setClearPending(false);
@@ -188,6 +216,7 @@ export default function App() {
           onToolChange={onToolChange}
           onClear={onClear}
           onSave={handleSave}
+          onShare={handleShareCopy}
           showGrid={showGrid}
           distanceHints={distanceHints}
           pointMode={pointMode}
@@ -213,6 +242,7 @@ export default function App() {
           onClearComplete={handleClearComplete}
           onStrokeChange={onStrokeChange}
           onHistoryChange={onHistoryChange}
+          now={now}
         />
         <LearningPanel
           activityMessage={activityMessage}
