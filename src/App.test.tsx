@@ -198,28 +198,31 @@ describe('Symmetry Art Studio app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const verticalAxis = screen.getByRole('radio', { name: '세로 대칭축' });
+    const getAxisRadio = (name: string) => screen.getByRole('radio', { name });
+    const verticalAxis = getAxisRadio('세로 대칭축');
     verticalAxis.focus();
+
+    expect(verticalAxis).toHaveAttribute('aria-checked', 'true');
     expect(verticalAxis).toHaveFocus();
 
-    await user.keyboard('{ArrowRight}');
-    const horizontalAxis = screen.getByRole('radio', { name: '가로 대칭축' });
-    expect(horizontalAxis).toHaveAttribute('aria-checked', 'true');
-    expect(horizontalAxis).toHaveAttribute('tabindex', '0');
-    expect(horizontalAxis).toHaveFocus();
+    const keyboardSteps = [
+      { key: '{ArrowRight}', expected: '가로 대칭축' },
+      { key: '{ArrowDown}', expected: '대각선 대칭축' },
+      { key: '{ArrowRight}', expected: '세로 대칭축' },
+      { key: '{ArrowLeft}', expected: '대각선 대칭축' },
+      { key: '{ArrowUp}', expected: '가로 대칭축' },
+      { key: '{Home}', expected: '세로 대칭축' },
+      { key: '{End}', expected: '대각선 대칭축' },
+    ];
 
-    await user.keyboard('{End}');
-    const diagonalAxis = screen.getByRole('radio', { name: '대각선 대칭축' });
-    expect(diagonalAxis).toHaveAttribute('aria-checked', 'true');
-    expect(diagonalAxis).toHaveAttribute('tabindex', '0');
-    expect(diagonalAxis).toHaveFocus();
+    for (const step of keyboardSteps) {
+      await user.keyboard(step.key);
+      const selectedAxis = getAxisRadio(step.expected);
 
-    await user.keyboard('{Home}');
-    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
-    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveFocus();
+      expect(selectedAxis).toHaveAttribute('aria-checked', 'true');
+      expect(selectedAxis).toHaveAttribute('tabindex', '0');
+      expect(selectedAxis).toHaveFocus();
+    }
   });
 
   it('tracks visited-axis classroom missions', async () => {
