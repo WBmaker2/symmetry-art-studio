@@ -67,14 +67,22 @@ describe('Symmetry Art Studio app shell', () => {
       clientY: 240,
     });
 
+    const clearRectBeforeUndo = canvasContext.clearRect.mock.calls.length;
+
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(canvasContext.clearRect).toHaveBeenCalledTimes(clearRectBeforeUndo + 1);
     expect(screen.getByRole('status')).toHaveTextContent(
       '마지막 획을 되돌렸습니다',
     );
 
+    const lineToBeforeRedo = canvasContext.lineTo.mock.calls.length;
     expect(screen.getByRole('button', { name: '다시 실행' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '다시 실행' }));
+    expect(canvasContext.lineTo).toHaveBeenCalled();
+    expect(canvasContext.lineTo.mock.calls.length).toBeGreaterThan(
+      lineToBeforeRedo,
+    );
     expect(screen.getByRole('status')).toHaveTextContent(
       '되돌린 획을 다시 그렸습니다',
     );

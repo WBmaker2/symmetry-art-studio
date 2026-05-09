@@ -226,7 +226,7 @@ export default function CanvasStage({
     redraw();
     reportHistory();
     onClearComplete();
-  }, [clearSignal, onClearComplete, redraw]);
+  }, [clearSignal, onClearComplete, redraw, reportHistory]);
 
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLCanvasElement>) => {
