@@ -48,21 +48,36 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     return { xFraction, yFraction };
   };
 
-  const startX = box.x + box.width * 0.25;
-  const startY = box.y + box.height * 0.4;
-  const midX = box.x + box.width * 0.32;
-  const midY = box.y + box.height * 0.48;
-  const endX = box.x + box.width * 0.38;
-  const endY = box.y + box.height * 0.37;
+  await page.getByRole('button', { name: '격자 보기' }).click();
+  await expect(page.getByRole('button', { name: '격자 보기' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+
+  const brushColor = { r: 31, g: 41, b: 55 };
+  const reflectedPointColor = { r: 15, g: 118, b: 110 };
+  const strokeStart = { x: 0.235, y: 0.415 };
+  const strokeMid = { x: 0.315, y: 0.485 };
+  const strokeEnd = { x: 0.385, y: 0.365 };
+  const startX = box.x + box.width * strokeStart.x;
+  const startY = box.y + box.height * strokeStart.y;
+  const midX = box.x + box.width * strokeMid.x;
+  const midY = box.y + box.height * strokeMid.y;
+  const endX = box.x + box.width * strokeEnd.x;
+  const endY = box.y + box.height * strokeEnd.y;
 
   await dispatchPointer('pointerdown', startX, startY, 1);
   await dispatchPointer('pointermove', midX, midY, 1);
   await dispatchPointer('pointermove', endX, endY, 1);
   await dispatchPointer('pointerup', endX, endY, 0);
 
-  const isPaintedPoint = async (xFraction: number, yFraction: number) =>
+  const isPaintedPoint = async (
+    xFraction: number,
+    yFraction: number,
+    expectedColor?: { r: number; g: number; b: number },
+  ) =>
     canvas.evaluate(
-      (element, { xFraction, yFraction }) => {
+      (element, { xFraction, yFraction, expectedColor }) => {
         const background = { r: 255, g: 253, b: 248 };
         const canvas = element as HTMLCanvasElement;
         const context = canvas.getContext('2d');
@@ -86,8 +101,14 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
             }
 
             const pixel = context.getImageData(px, py, 1, 1).data;
+            const hasExpectedColor =
+              !expectedColor ||
+              (Math.abs(pixel[0] - expectedColor.r) <= 8 &&
+                Math.abs(pixel[1] - expectedColor.g) <= 8 &&
+                Math.abs(pixel[2] - expectedColor.b) <= 8);
             if (
               pixel[3] > 0 &&
+              hasExpectedColor &&
               (pixel[0] !== background.r ||
                 pixel[1] !== background.g ||
                 pixel[2] !== background.b)
@@ -99,11 +120,15 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
 
         return false;
       },
-      { xFraction, yFraction },
+      { xFraction, yFraction, expectedColor },
     );
 
-  const isPainted = await isPaintedPoint(0.25, 0.4);
-  const reflectedIsPainted = await isPaintedPoint(0.75, 0.4);
+  const isPainted = await isPaintedPoint(strokeStart.x, strokeStart.y, brushColor);
+  const reflectedIsPainted = await isPaintedPoint(
+    1 - strokeStart.x,
+    strokeStart.y,
+    brushColor,
+  );
 
   expect(isPainted).toBe(true);
   expect(reflectedIsPainted).toBe(true);
@@ -122,7 +147,6 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await page.getByRole('button', { name: '전체 지우기 확인' }).click();
   await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
 
-  await page.getByRole('button', { name: '격자 보기' }).click();
   await page.getByRole('button', { name: '점 탐구' }).click();
 
   await expect(page.getByRole('button', { name: '점 탐구' })).toHaveAttribute(
@@ -138,9 +162,15 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   const reflectedXFraction = 1 - firstPoint.xFraction;
   const noHintGuideXFraction = (firstPoint.xFraction + 0.5) / 2;
 
-  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction)).toBe(true);
-  expect(await isPaintedPoint(reflectedXFraction, firstPoint.yFraction)).toBe(true);
-  expect(await isPaintedPoint(noHintGuideXFraction, firstPoint.yFraction)).toBe(false);
+  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction, brushColor)).toBe(
+    true,
+  );
+  expect(
+    await isPaintedPoint(reflectedXFraction, firstPoint.yFraction, reflectedPointColor),
+  ).toBe(true);
+  expect(
+    await isPaintedPoint(noHintGuideXFraction, firstPoint.yFraction, reflectedPointColor),
+  ).toBe(false);
 
   await page.getByRole('button', { name: '거리 힌트' }).click();
   await expect(page.getByRole('button', { name: '거리 힌트' })).toHaveAttribute(
@@ -160,11 +190,15 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   );
 
   const guideXFraction = (secondPoint.xFraction + 0.5) / 2;
-  expect(await isPaintedPoint(guideXFraction, secondPoint.yFraction)).toBe(true);
+  expect(
+    await isPaintedPoint(guideXFraction, secondPoint.yFraction, reflectedPointColor),
+  ).toBe(true);
 
   await page.getByRole('button', { name: '전체 지우기' }).click();
   await expect(page.getByRole('status')).toContainText('한 번 더 누르면 캔버스를 비웁니다');
   await page.getByRole('button', { name: '전체 지우기 확인' }).click();
   await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
-  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction)).toBe(false);
+  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction, brushColor)).toBe(
+    false,
+  );
 });

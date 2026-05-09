@@ -160,6 +160,60 @@ describe('Symmetry Art Studio app shell', () => {
     expect(hintRender.lineTo).toBeGreaterThan(noHintRender.lineTo);
   });
 
+  it('keeps live stroke redraw order aligned with the saved canvas state', () => {
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+    resetCanvasMocks();
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 7,
+      clientX: 221,
+      clientY: 398,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 7,
+      clientX: 317,
+      clientY: 443,
+    });
+
+    const lineToCalls = canvasContext.lineTo.mock.calls.map(([x, y]) => [
+      Number(x),
+      Number(y),
+    ]);
+    const findLineTo = (x: number, y: number) =>
+      lineToCalls.findIndex(([callX, callY]) => callX === x && callY === y);
+    const findLastLineTo = (x: number, y: number) =>
+      lineToCalls.reduce(
+        (lastIndex, [callX, callY], index) =>
+          callX === x && callY === y ? index : lastIndex,
+        -1,
+      );
+
+    const firstGridLineIndex = findLineTo(0, 960);
+    const originalStrokeIndex = findLineTo(317, 443);
+    const reflectedStrokeIndex = findLineTo(643, 443);
+    const finalAxisIndex = findLastLineTo(480, 960);
+
+    expect(canvasContext.clearRect).toHaveBeenCalled();
+    expect(firstGridLineIndex).toBeGreaterThanOrEqual(0);
+    expect(originalStrokeIndex).toBeGreaterThan(firstGridLineIndex);
+    expect(reflectedStrokeIndex).toBeGreaterThan(firstGridLineIndex);
+    expect(finalAxisIndex).toBeGreaterThan(originalStrokeIndex);
+    expect(finalAxisIndex).toBeGreaterThan(reflectedStrokeIndex);
+
+    const clearCountAfterMove = canvasContext.clearRect.mock.calls.length;
+    fireEvent.pointerUp(canvas, {
+      pointerId: 7,
+      clientX: 317,
+      clientY: 443,
+    });
+
+    expect(canvasContext.clearRect.mock.calls.length).toBeGreaterThan(
+      clearCountAfterMove,
+    );
+  });
+
   it('renders the drawing canvas and clear command', async () => {
     const user = userEvent.setup();
     render(<App />);

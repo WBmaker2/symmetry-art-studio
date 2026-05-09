@@ -184,10 +184,8 @@ export default function CanvasStage({
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.lineWidth = isEraser ? segment.brushSize * 1.35 : segment.brushSize;
-      ctx.globalCompositeOperation = isEraser
-        ? 'destination-out'
-        : 'source-over';
-      ctx.strokeStyle = isEraser ? '#000000' : segment.color;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = isEraser ? '#fffdf8' : segment.color;
 
       for (const [startPoint, endPoint] of pairs) {
         ctx.beginPath();
@@ -281,7 +279,7 @@ export default function CanvasStage({
 
     drawGrid(ctx);
 
-    actionsRef.current.forEach((action, actionIndex) => {
+    const drawAction = (action: CanvasAction, actionIndex: number) => {
       if (action.kind === 'stroke') {
         for (const segment of action.segments) {
           drawSegment(ctx, segment);
@@ -295,7 +293,13 @@ export default function CanvasStage({
           .reduce((acc, prevAction) => acc + Number(prevAction.kind === 'point'), 0);
         drawPointAction(ctx, action, getPointLabel(pointIndex), shouldShowDistanceGuides);
       }
-    });
+    };
+
+    actionsRef.current.forEach(drawAction);
+
+    if (activeStrokeRef.current) {
+      drawAction(activeStrokeRef.current, actionsRef.current.length);
+    }
 
     drawAxis(ctx);
   }, [drawAxis, drawGrid, drawSegment, drawPointAction, shouldShowDistanceGuides]);
@@ -308,13 +312,16 @@ export default function CanvasStage({
   }, [onHistoryChange]);
 
   const commitActiveStroke = useCallback(() => {
-    if (!activeStrokeRef.current || activeStrokeRef.current.segments.length === 0) {
+    if (!activeStrokeRef.current) {
       return;
     }
 
-    actionsRef.current.push(activeStrokeRef.current);
+    if (activeStrokeRef.current.segments.length > 0) {
+      actionsRef.current.push(activeStrokeRef.current);
+      undoneActionsRef.current = [];
+    }
+
     activeStrokeRef.current = null;
-    undoneActionsRef.current = [];
   }, []);
 
   const undoLastAction = useCallback(() => {
@@ -445,11 +452,9 @@ export default function CanvasStage({
       }
 
       const currentPoint = getCanvasPoint(event);
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext('2d');
       const startPoint = lastPointRef.current;
 
-      if (!ctx || !startPoint) {
+      if (!startPoint) {
         return;
       }
 
@@ -462,23 +467,14 @@ export default function CanvasStage({
         tool,
       };
       activeStrokeRef.current.segments.push(segment);
-      drawSegment(ctx, segment);
-      drawGrid(ctx);
-      drawAxis(ctx);
-      if (shouldShowDistanceGuides) {
-        redraw();
-      }
+      redraw();
       lastPointRef.current = currentPoint;
     },
     [
       axis,
       brushSize,
       color,
-      drawAxis,
-      drawGrid,
-      drawSegment,
       getCanvasPoint,
-      shouldShowDistanceGuides,
       redraw,
       tool,
     ],
@@ -500,12 +496,13 @@ export default function CanvasStage({
       activePointerIdRef.current = null;
       lastPointRef.current = null;
       commitActiveStroke();
+      redraw();
       reportHistory();
       onStrokeChange(
         '획을 완성했습니다. 대칭축을 바꾸면 새 축으로 이어서 그릴 수 있습니다.',
       );
     },
-    [commitActiveStroke, onStrokeChange, reportHistory],
+    [commitActiveStroke, onStrokeChange, redraw, reportHistory],
   );
 
   const savePng = useCallback(() => {
@@ -514,12 +511,13 @@ export default function CanvasStage({
       return;
     }
 
+    redraw();
     const link = document.createElement('a');
     link.download = 'symmetry-art-studio.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
     onSaveComplete('PNG 이미지로 저장했습니다.');
-  }, [onSaveComplete]);
+  }, [onSaveComplete, redraw]);
 
   useEffect(() => {
     if (saveSignalRef.current === saveSignal) {
@@ -551,7 +549,7 @@ export default function CanvasStage({
   }, [redoSignal, onRedoComplete, redoLastAction]);
 
   return (
-    <div className={`canvas-stage${showGrid ? ' grid-on' : ''}`}>
+    <div className="canvas-stage">
       <canvas
         ref={canvasRef}
         aria-label="대칭 그림 캔버스"
