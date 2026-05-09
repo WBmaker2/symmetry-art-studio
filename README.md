@@ -39,6 +39,10 @@ npm run e2e
 3. 대각선 대칭축에서는 선의 방향이 어떻게 바뀌는지 관찰하게 합니다.
 4. 완성한 그림을 PNG로 저장해 미술 활동 결과물로 공유합니다.
 
+## 교사용 수업 패키지
+
+- [Symmetry Art Studio 교사용 수업 활용 패키지(5-6학년)](docs/classroom/symmetry-art-studio-lesson-package.md)
+
 ## 공개 URL
 
 https://wbmaker2.github.io/symmetry-art-studio/
