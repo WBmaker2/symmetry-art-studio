@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
@@ -194,6 +194,12 @@ describe('Symmetry Art Studio app shell', () => {
     expect(
       screen.getByRole('listitem', { name: /세로축으로 시작 선 그리기/ }),
     ).toHaveAttribute('aria-label', '세로축으로 시작 선 그리기 완료');
+    expect(
+      screen.getByRole('listitem', { name: /세 축 비교하기/ }),
+    ).toHaveAttribute('aria-label', '세 축 비교하기 진행 중');
+    expect(screen.getAllByRole('listitem', { name: /(완료|진행 중)$/ })).toHaveLength(
+      4,
+    );
 
     await user.click(screen.getByRole('radio', { name: '가로 대칭축' }));
     expect(
@@ -205,7 +211,9 @@ describe('Symmetry Art Studio app shell', () => {
       screen.getByRole('listitem', { name: /대각선축으로 방향 변화 관찰하기/ }),
     ).toHaveAttribute('aria-label', '대각선축으로 방향 변화 관찰하기 완료');
     expect(screen.getByRole('status')).toHaveTextContent('대각선 대칭축');
-    expect(screen.getByText('세 축 비교하기')).toBeInTheDocument();
+    expect(
+      screen.getByRole('listitem', { name: /세 축 비교하기/ }),
+    ).toHaveAttribute('aria-label', '세 축 비교하기 완료');
   });
 
   it('shows classroom learning prompts tied to symmetry and art standards', () => {
@@ -214,5 +222,19 @@ describe('Symmetry Art Studio app shell', () => {
     expect(screen.getByText('[6수03-03]')).toBeInTheDocument();
     expect(screen.getByText('[6미02-02]')).toBeInTheDocument();
     expect(screen.getByText('관찰 질문')).toBeInTheDocument();
+  });
+
+  it('preserves color swatch accessible names while showing visual labels', () => {
+    render(<App />);
+
+    const swatchButton = screen.getByRole('button', { name: '파랑' });
+    expect(swatchButton).toBeInTheDocument();
+    expect(within(swatchButton).getByText('파랑')).toBeInTheDocument();
+
+    const colorNames = ['검정', '빨강', '노랑', '초록', '파랑', '보라'];
+    colorNames.forEach((name) => {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+      expect(within(screen.getByRole('button', { name })).getByText(name)).toBeInTheDocument();
+    });
   });
 });
