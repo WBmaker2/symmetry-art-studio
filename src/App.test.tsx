@@ -259,7 +259,15 @@ describe('Symmetry Art Studio app shell', () => {
     render(<App />);
 
     expect(screen.getByText('[6수03-02]')).toBeInTheDocument();
+    expect(
+      screen.getByText('실생활과 연결하여 선대칭도형과 점대칭도형을 이해하고 그릴 수 있습니다.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('[6미02-02]')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '디지털 매체 등 다양한 표현 재료와 용구를 탐색하여 작품 제작에 활용할 수 있습니다.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText('관찰 질문')).toBeInTheDocument();
   });
 
