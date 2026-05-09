@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import {
   Redo2,
   Brush,
@@ -38,6 +39,33 @@ type StudioToolbarProps = {
 
 const axisOrder: AxisMode[] = ['vertical', 'horizontal', 'diagonal'];
 
+function getKeyboardAxis(
+  key: string,
+  currentAxis: AxisMode,
+): AxisMode | null {
+  const currentIndex = axisOrder.indexOf(currentAxis);
+
+  if (key === 'ArrowRight' || key === 'ArrowDown') {
+    return axisOrder[(currentIndex + 1) % axisOrder.length];
+  }
+
+  if (key === 'ArrowLeft' || key === 'ArrowUp') {
+    return axisOrder[
+      (currentIndex - 1 + axisOrder.length) % axisOrder.length
+    ];
+  }
+
+  if (key === 'Home') {
+    return axisOrder[0];
+  }
+
+  if (key === 'End') {
+    return axisOrder[axisOrder.length - 1];
+  }
+
+  return null;
+}
+
 export function StudioToolbar({
   axis,
   color,
@@ -56,6 +84,25 @@ export function StudioToolbar({
   clearPending,
   onSave,
 }: StudioToolbarProps) {
+  const handleAxisKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentAxis: AxisMode,
+  ) => {
+    const nextAxis = getKeyboardAxis(event.key, currentAxis);
+
+    if (!nextAxis) {
+      return;
+    }
+
+    event.preventDefault();
+    onAxisChange(nextAxis);
+
+    const nextRadio = event.currentTarget.parentElement?.querySelector<
+      HTMLButtonElement
+    >(`[data-axis="${nextAxis}"]`);
+    nextRadio?.focus();
+  };
+
   return (
     <aside className="toolbar" aria-label="대칭 아트 도구">
       <section
@@ -69,8 +116,11 @@ export function StudioToolbar({
               key={axisMode}
               type="button"
               role="radio"
+              data-axis={axisMode}
               onClick={() => onAxisChange(axisMode)}
+              onKeyDown={(event) => handleAxisKeyDown(event, axisMode)}
               aria-checked={axis === axisMode}
+              tabIndex={axis === axisMode ? 0 : -1}
               className="segment-button"
             >
               {axisLabels[axisMode]}

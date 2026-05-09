@@ -48,7 +48,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
 
   await expect(page.getByRole('status')).toContainText('획을 완성했습니다');
 
-  await page.getByRole('button', { name: '대각선 대칭축' }).click();
+  await page.getByRole('radio', { name: '대각선 대칭축' }).click();
   await expect(page.getByRole('status')).toContainText('대각선 대칭축');
 
   await page.getByRole('button', { name: '전체 지우기' }).click();

@@ -176,14 +176,50 @@ describe('Symmetry Art Studio app shell', () => {
       'aria-checked',
       'true',
     );
+    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
     expect(screen.getByRole('radio', { name: '가로 대칭축' })).toHaveAttribute(
       'aria-checked',
       'false',
+    );
+    expect(screen.getByRole('radio', { name: '가로 대칭축' })).toHaveAttribute(
+      'tabindex',
+      '-1',
     );
     expect(screen.getByRole('radio', { name: '대각선 대칭축' })).toHaveAttribute(
       'aria-checked',
       'false',
     );
+  });
+
+  it('supports keyboard navigation in the symmetry-axis radiogroup', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const verticalAxis = screen.getByRole('radio', { name: '세로 대칭축' });
+    verticalAxis.focus();
+    expect(verticalAxis).toHaveFocus();
+
+    await user.keyboard('{ArrowRight}');
+    const horizontalAxis = screen.getByRole('radio', { name: '가로 대칭축' });
+    expect(horizontalAxis).toHaveAttribute('aria-checked', 'true');
+    expect(horizontalAxis).toHaveAttribute('tabindex', '0');
+    expect(horizontalAxis).toHaveFocus();
+
+    await user.keyboard('{End}');
+    const diagonalAxis = screen.getByRole('radio', { name: '대각선 대칭축' });
+    expect(diagonalAxis).toHaveAttribute('aria-checked', 'true');
+    expect(diagonalAxis).toHaveAttribute('tabindex', '0');
+    expect(diagonalAxis).toHaveFocus();
+
+    await user.keyboard('{Home}');
+    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveFocus();
   });
 
   it('tracks visited-axis classroom missions', async () => {
