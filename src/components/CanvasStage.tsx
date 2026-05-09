@@ -7,7 +7,7 @@ import {
 
 import {
   getAxisLine,
-  reflectPoint,
+  getSymmetryPointGuide,
   type AxisMode,
   type CanvasSize,
   type Point,
@@ -19,6 +19,9 @@ type CanvasStageProps = {
   color: string;
   brushSize: number;
   tool: DrawingTool;
+  showGrid: boolean;
+  pointMode: boolean;
+  distanceHints: boolean;
   undoSignal: number;
   redoSignal: number;
   saveSignal: number;
@@ -40,21 +43,61 @@ type StrokeSegment = {
   tool: DrawingTool;
 };
 
-type Stroke = {
+type StrokeAction = {
   id: number;
+  kind: 'stroke';
   segments: StrokeSegment[];
 };
+
+type PointAction = {
+  id: number;
+  kind: 'point';
+  point: Point;
+  reflectedPoint: Point;
+  axis: AxisMode;
+  color: string;
+  brushSize: number;
+};
+
+type CanvasAction = StrokeAction | PointAction;
 
 const canvasSize: CanvasSize = {
   width: 960,
   height: 960,
 };
 
+const gridSpacing = 40;
+
+function getPointLabel(index: number): string {
+  const letterCode = 'A'.charCodeAt(0) + (index % 26);
+  return String.fromCharCode(letterCode);
+}
+
+function drawPointGuideLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+): void {
+  ctx.save();
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '14px Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  if (typeof ctx.fillText === 'function') {
+    ctx.fillText(text, x, y - 8);
+  }
+  ctx.restore();
+}
+
 export default function CanvasStage({
   axis,
   color,
   brushSize,
   tool,
+  showGrid,
+  pointMode,
+  distanceHints,
   undoSignal,
   redoSignal,
   saveSignal,
@@ -70,14 +113,46 @@ export default function CanvasStage({
   const isDrawingRef = useRef(false);
   const activePointerIdRef = useRef<number | null>(null);
   const lastPointRef = useRef<Point | null>(null);
-  const strokeIdRef = useRef(0);
-  const activeStrokeRef = useRef<Stroke | null>(null);
-  const strokesRef = useRef<Stroke[]>([]);
-  const undoneStrokesRef = useRef<Stroke[]>([]);
+  const actionIdRef = useRef(0);
+  const activeStrokeRef = useRef<StrokeAction | null>(null);
+  const actionsRef = useRef<CanvasAction[]>([]);
+  const undoneActionsRef = useRef<CanvasAction[]>([]);
   const clearSignalRef = useRef(clearSignal);
   const undoSignalRef = useRef(undoSignal);
   const redoSignalRef = useRef(redoSignal);
   const saveSignalRef = useRef(saveSignal);
+
+  const shouldShowDistanceGuides = pointMode && distanceHints;
+
+  const drawGrid = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      if (!showGrid) {
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(37, 99, 235, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+
+      for (let x = 0; x <= canvasSize.width; x += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvasSize.height);
+        ctx.stroke();
+      }
+
+      for (let y = 0; y <= canvasSize.height; y += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvasSize.width, y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    },
+    [showGrid],
+  );
 
   const drawAxis = useCallback(
     (ctx: CanvasRenderingContext2D) => {
@@ -97,8 +172,8 @@ export default function CanvasStage({
 
   const drawSegment = useCallback(
     (ctx: CanvasRenderingContext2D, segment: StrokeSegment) => {
-      const reflectedStart = reflectPoint(segment.start, segment.axis, canvasSize);
-      const reflectedEnd = reflectPoint(segment.end, segment.axis, canvasSize);
+      const reflectedStart = getSymmetryPointGuide(segment.start, segment.axis, canvasSize).reflected;
+      const reflectedEnd = getSymmetryPointGuide(segment.end, segment.axis, canvasSize).reflected;
       const pairs: Array<[Point, Point]> = [
         [segment.start, segment.end],
         [reflectedStart, reflectedEnd],
@@ -126,6 +201,73 @@ export default function CanvasStage({
     [],
   );
 
+  const drawPointAction = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      action: PointAction,
+      label: string,
+      showDistanceGuides: boolean,
+    ) => {
+      const guide = getSymmetryPointGuide(action.point, action.axis, canvasSize);
+      const dotSize = Math.max(4, Math.max(2, action.brushSize * 0.34));
+
+      ctx.save();
+      if (typeof ctx.arc === 'function' && typeof ctx.fill === 'function') {
+        ctx.beginPath();
+        ctx.fillStyle = action.color;
+        ctx.arc(action.point.x, action.point.y, dotSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = '#0f766e';
+        ctx.arc(guide.reflected.x, guide.reflected.y, dotSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      drawPointGuideLabel(ctx, action.point.x, action.point.y, `${label}`);
+      drawPointGuideLabel(ctx, guide.reflected.x, guide.reflected.y, `${label}'`);
+      ctx.restore();
+
+      if (!showDistanceGuides) {
+        return;
+      }
+
+      ctx.save();
+      ctx.setLineDash([10, 8]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0f766e';
+
+      ctx.beginPath();
+      ctx.moveTo(action.point.x, action.point.y);
+      ctx.lineTo(guide.footPoint.x, guide.footPoint.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(guide.reflected.x, guide.reflected.y);
+      ctx.lineTo(guide.footPoint.x, guide.footPoint.y);
+      ctx.stroke();
+      ctx.restore();
+
+      if (typeof ctx.fillText === 'function') {
+        ctx.save();
+        ctx.fillStyle = guide.sameDistance ? '#065f46' : '#b45309';
+        ctx.font =
+          '12px Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        const footLabelX = guide.footPoint.x + 8;
+        const footLabelY = guide.footPoint.y + 8;
+        ctx.fillText(
+          `d=${Math.round(guide.originalDistance)}`,
+          footLabelX,
+          footLabelY,
+        );
+        ctx.restore();
+      }
+    },
+    [],
+  );
+
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -137,19 +279,31 @@ export default function CanvasStage({
     ctx.fillStyle = '#fffdf8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for (const stroke of strokesRef.current) {
-      for (const segment of stroke.segments) {
-        drawSegment(ctx, segment);
+    drawGrid(ctx);
+
+    actionsRef.current.forEach((action, actionIndex) => {
+      if (action.kind === 'stroke') {
+        for (const segment of action.segments) {
+          drawSegment(ctx, segment);
+        }
+        return;
       }
-    }
+
+      if (action.kind === 'point') {
+        const pointIndex = actionsRef.current
+          .slice(0, actionIndex)
+          .reduce((acc, prevAction) => acc + Number(prevAction.kind === 'point'), 0);
+        drawPointAction(ctx, action, getPointLabel(pointIndex), shouldShowDistanceGuides);
+      }
+    });
 
     drawAxis(ctx);
-  }, [drawAxis, drawSegment]);
+  }, [drawAxis, drawGrid, drawSegment, drawPointAction, shouldShowDistanceGuides]);
 
   const reportHistory = useCallback(() => {
     onHistoryChange({
-      canUndo: strokesRef.current.length > 0,
-      canRedo: undoneStrokesRef.current.length > 0,
+      canUndo: actionsRef.current.length > 0,
+      canRedo: undoneActionsRef.current.length > 0,
     });
   }, [onHistoryChange]);
 
@@ -158,30 +312,30 @@ export default function CanvasStage({
       return;
     }
 
-    strokesRef.current.push(activeStrokeRef.current);
+    actionsRef.current.push(activeStrokeRef.current);
     activeStrokeRef.current = null;
-    undoneStrokesRef.current = [];
+    undoneActionsRef.current = [];
   }, []);
 
-  const undoLastStroke = useCallback(() => {
-    const stroke = strokesRef.current.pop();
-    if (!stroke) {
+  const undoLastAction = useCallback(() => {
+    const action = actionsRef.current.pop();
+    if (!action) {
       return '되돌릴 획이 없습니다.';
     }
 
-    undoneStrokesRef.current.push(stroke);
+    undoneActionsRef.current.push(action);
     redraw();
     reportHistory();
     return '마지막 획을 되돌렸습니다.';
   }, [redraw, reportHistory]);
 
-  const redoLastStroke = useCallback(() => {
-    const stroke = undoneStrokesRef.current.pop();
-    if (!stroke) {
+  const redoLastAction = useCallback(() => {
+    const action = undoneActionsRef.current.pop();
+    if (!action) {
       return '다시 실행할 획이 없습니다.';
     }
 
-    strokesRef.current.push(stroke);
+    actionsRef.current.push(action);
     redraw();
     reportHistory();
     return '되돌린 획을 다시 그렸습니다.';
@@ -208,7 +362,7 @@ export default function CanvasStage({
   useEffect(() => {
     reportHistory();
     redraw();
-  }, [axis, redraw, reportHistory]);
+  }, [axis, pointMode, distanceHints, showGrid, redraw, reportHistory]);
 
   useEffect(() => {
     if (clearSignalRef.current === clearSignal) {
@@ -216,8 +370,8 @@ export default function CanvasStage({
     }
 
     clearSignalRef.current = clearSignal;
-    strokesRef.current = [];
-    undoneStrokesRef.current = [];
+    actionsRef.current = [];
+    undoneActionsRef.current = [];
     activeStrokeRef.current = null;
     activePointerIdRef.current = null;
     isDrawingRef.current = false;
@@ -236,8 +390,33 @@ export default function CanvasStage({
 
       const point = getCanvasPoint(event);
       activePointerIdRef.current = event.pointerId;
+
+      if (pointMode) {
+        const reflectedPoint = getSymmetryPointGuide(point, axis, canvasSize).reflected;
+
+        actionsRef.current.push({
+          id: actionIdRef.current++,
+          kind: 'point',
+          point,
+          reflectedPoint,
+          axis,
+          color,
+          brushSize,
+        });
+        undoneActionsRef.current = [];
+        redraw();
+        reportHistory();
+        onStrokeChange(
+          '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+        );
+        isDrawingRef.current = false;
+        activePointerIdRef.current = null;
+        return;
+      }
+
       activeStrokeRef.current = {
-        id: strokeIdRef.current++,
+        id: actionIdRef.current++,
+        kind: 'stroke',
         segments: [],
       };
       isDrawingRef.current = true;
@@ -252,7 +431,7 @@ export default function CanvasStage({
         // Pointer capture can fail in some environments; drawing still works.
       }
     },
-    [getCanvasPoint, onStrokeChange],
+    [brushSize, color, getCanvasPoint, onStrokeChange, pointMode, redraw, reportHistory, axis],
   );
 
   const handlePointerMove = useCallback(
@@ -284,18 +463,30 @@ export default function CanvasStage({
       };
       activeStrokeRef.current.segments.push(segment);
       drawSegment(ctx, segment);
+      drawGrid(ctx);
       drawAxis(ctx);
+      if (shouldShowDistanceGuides) {
+        redraw();
+      }
       lastPointRef.current = currentPoint;
     },
-    [axis, brushSize, color, drawAxis, drawSegment, getCanvasPoint, tool],
+    [
+      axis,
+      brushSize,
+      color,
+      drawAxis,
+      drawGrid,
+      drawSegment,
+      getCanvasPoint,
+      shouldShowDistanceGuides,
+      redraw,
+      tool,
+    ],
   );
 
   const handlePointerUp = useCallback(
     (event: PointerEvent<HTMLCanvasElement>) => {
-      if (
-        !isDrawingRef.current ||
-        activePointerIdRef.current !== event.pointerId
-      ) {
+      if (!isDrawingRef.current || activePointerIdRef.current !== event.pointerId) {
         return;
       }
 
@@ -345,9 +536,9 @@ export default function CanvasStage({
     }
 
     undoSignalRef.current = undoSignal;
-    const message = undoLastStroke();
+    const message = undoLastAction();
     onUndoComplete(message);
-  }, [undoSignal, onUndoComplete, undoLastStroke]);
+  }, [undoSignal, onUndoComplete, undoLastAction]);
 
   useEffect(() => {
     if (redoSignalRef.current === redoSignal) {
@@ -355,12 +546,12 @@ export default function CanvasStage({
     }
 
     redoSignalRef.current = redoSignal;
-    const message = redoLastStroke();
+    const message = redoLastAction();
     onRedoComplete(message);
-  }, [redoSignal, onRedoComplete, redoLastStroke]);
+  }, [redoSignal, onRedoComplete, redoLastAction]);
 
   return (
-    <div className="canvas-stage">
+    <div className={`canvas-stage${showGrid ? ' grid-on' : ''}`}>
       <canvas
         ref={canvasRef}
         aria-label="대칭 그림 캔버스"

@@ -24,6 +24,9 @@ export default function App() {
   const [color, setColor] = useState(colors[0].value);
   const [brushSize, setBrushSize] = useState(10);
   const [tool, setTool] = useState<DrawingTool>('brush');
+  const [showGrid, setShowGrid] = useState(true);
+  const [pointMode, setPointMode] = useState(false);
+  const [distanceHints, setDistanceHints] = useState(false);
   const [undoSignal, setUndoSignal] = useState(0);
   const [redoSignal, setRedoSignal] = useState(0);
   const [saveSignal, setSaveSignal] = useState(0);
@@ -68,6 +71,34 @@ export default function App() {
 
   const onRedo = useCallback(() => {
     setRedoSignal((value) => value + 1);
+  }, []);
+
+  const onGridToggle = useCallback(() => {
+    setShowGrid((value) => {
+      const next = !value;
+      setActivityMessage(next ? '격자 보기가 켜졌습니다.' : '격자 보기가 꺼졌습니다.');
+      return next;
+    });
+  }, []);
+
+  const onDistanceToggle = useCallback(() => {
+    setDistanceHints((value) => {
+      const next = !value;
+      setActivityMessage(
+        next ? '거리 힌트를 켰습니다. 점 탐구 모드일 때 가이드가 보여집니다.' : '거리 힌트를 껐습니다.',
+      );
+      return next;
+    });
+  }, []);
+
+  const onPointModeToggle = useCallback(() => {
+    setPointMode((value) => {
+      const next = !value;
+      setActivityMessage(
+        next ? '점 탐구 모드로 전환했습니다.' : '점 탐구 모드를 종료했습니다.',
+      );
+      return next;
+    });
   }, []);
 
   const onHistoryChange = useCallback(
@@ -157,12 +188,21 @@ export default function App() {
           onToolChange={onToolChange}
           onClear={onClear}
           onSave={handleSave}
+          showGrid={showGrid}
+          distanceHints={distanceHints}
+          pointMode={pointMode}
+          onGridToggle={onGridToggle}
+          onDistanceToggle={onDistanceToggle}
+          onPointModeToggle={onPointModeToggle}
         />
         <CanvasStage
           axis={axis}
           color={color}
           brushSize={brushSize}
           tool={tool}
+          showGrid={showGrid}
+          pointMode={pointMode}
+          distanceHints={distanceHints}
           undoSignal={undoSignal}
           redoSignal={redoSignal}
           saveSignal={saveSignal}

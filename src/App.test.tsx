@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
@@ -35,6 +35,55 @@ describe('Symmetry Art Studio app shell', () => {
       'aria-pressed',
       'false',
     );
+  });
+
+  it('lets students toggle grid and point exploration controls', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const gridToggle = screen.getByRole('button', { name: '격자 보기' });
+    const distanceToggle = screen.getByRole('button', { name: '거리 힌트' });
+    const pointModeToggle = screen.getByRole('button', { name: '점 탐구' });
+
+    expect(gridToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(distanceToggle).toHaveAttribute('aria-pressed', 'false');
+    expect(pointModeToggle).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(distanceToggle);
+    await user.click(pointModeToggle);
+    await user.click(gridToggle);
+
+    expect(distanceToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(pointModeToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(gridToggle).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('status')).toHaveTextContent('격자 보기가 꺼졌습니다.');
+  });
+
+  it('adds point exploration points and records them in undo/redo history', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+    const pointMode = screen.getByRole('button', { name: '점 탐구' });
+    await user.click(pointMode);
+
+    fireEvent.pointerDown(canvas, { pointerId: 3, clientX: 200, clientY: 220 });
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+      ),
+    );
+
+    expect(canvasContext.beginPath).toHaveBeenCalled();
+
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('마지막 획을 되돌렸습니다');
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: '다시 실행' }));
+    expect(screen.getByRole('status')).toHaveTextContent('되돌린 획을 다시 그렸습니다');
+    expect(screen.getByRole('button', { name: '다시 실행' })).toBeDisabled();
   });
 
   it('renders the drawing canvas and clear command', async () => {

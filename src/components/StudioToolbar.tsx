@@ -7,6 +7,9 @@ import {
   Undo2,
   RotateCcw,
   Slash,
+  Grid2x2,
+  Ruler,
+  Target,
 } from 'lucide-react';
 
 import { axisLabels, type AxisMode } from '../domain/symmetry';
@@ -31,6 +34,12 @@ type StudioToolbarProps = {
   onUndo: () => void;
   onRedo: () => void;
   onClear: () => void;
+  onGridToggle: () => void;
+  onDistanceToggle: () => void;
+  onPointModeToggle: () => void;
+  showGrid: boolean;
+  distanceHints: boolean;
+  pointMode: boolean;
   canUndo: boolean;
   canRedo: boolean;
   clearPending: boolean;
@@ -79,6 +88,12 @@ export function StudioToolbar({
   onUndo,
   onRedo,
   onClear,
+  onGridToggle,
+  onDistanceToggle,
+  onPointModeToggle,
+  showGrid,
+  distanceHints,
+  pointMode,
   canUndo,
   canRedo,
   clearPending,
@@ -186,6 +201,36 @@ export function StudioToolbar({
           편집 도구
         </h2>
         <div className="action-row" aria-labelledby="edit-tools-title">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onGridToggle}
+            aria-pressed={showGrid}
+            title="격자 보기"
+          >
+            <Grid2x2 aria-hidden="true" size={18} />
+            격자 보기
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onDistanceToggle}
+            aria-pressed={distanceHints}
+            title="거리 힌트"
+          >
+            <Ruler aria-hidden="true" size={18} />
+            거리 힌트
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onPointModeToggle}
+            aria-pressed={pointMode}
+            title="점 탐구"
+          >
+            <Target aria-hidden="true" size={18} />
+            점 탐구
+          </button>
           <button
             type="button"
             className="icon-button"

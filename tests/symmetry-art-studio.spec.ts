@@ -104,4 +104,18 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
 
   await page.getByRole('button', { name: '전체 지우기 확인' }).click();
   await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
+
+  await page.getByRole('button', { name: '격자 보기' }).click();
+  await page.getByRole('button', { name: '거리 힌트' }).click();
+  await page.getByRole('button', { name: '점 탐구' }).click();
+
+  await expect(page.getByRole('button', { name: '점 탐구' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  const pointX = box.x + box.width * 0.22;
+  const pointY = box.y + box.height * 0.5;
+  await dispatchPointer('pointerdown', pointX, pointY, 1, 'mouse');
+  await dispatchPointer('pointerup', pointX, pointY, 0, 'mouse');
 });
