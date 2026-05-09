@@ -332,27 +332,34 @@ button {
   outline-offset: 3px;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1180px) {
   .workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   }
 
-  .toolbar {
+  .toolbar,
+  .canvas-stage {
+    grid-row: 1;
+  }
+
+  .learning-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 18px 24px;
   }
 
-  .tool-group + .tool-group {
+  .learning-panel section + section {
     margin-top: 0;
   }
 
-  .axis-note {
+  .learning-panel section:last-child {
     grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .app-shell {
     padding: 18px;
   }
@@ -361,8 +368,33 @@ button {
     font-size: 2rem;
   }
 
-  .toolbar {
+  .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .toolbar,
+  .canvas-stage,
+  .learning-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .tool-group + .tool-group {
+    margin-top: 0;
+  }
+
+  .learning-panel {
+    display: block;
+  }
+
+  .learning-panel section + section {
+    margin-top: 18px;
   }
 
   .axis-note {

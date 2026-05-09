@@ -55,6 +55,27 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
     }
   };
 
+  const assertTabletWorkspaceLayout = async () => {
+    const toolbarBox = await page.locator('.toolbar').boundingBox();
+    const currentCanvasBox = await canvas.boundingBox();
+    const learningBox = await page.locator('.learning-panel').boundingBox();
+
+    expect(toolbarBox).not.toBeNull();
+    expect(currentCanvasBox).not.toBeNull();
+    expect(learningBox).not.toBeNull();
+    if (!toolbarBox || !currentCanvasBox || !learningBox) {
+      throw new Error('Workspace layout boxes were not available');
+    }
+
+    expect(toolbarBox.x + toolbarBox.width).toBeLessThanOrEqual(
+      currentCanvasBox.x - 8,
+    );
+    expect(Math.abs(toolbarBox.y - currentCanvasBox.y)).toBeLessThanOrEqual(2);
+    expect(learningBox.y).toBeGreaterThan(
+      currentCanvasBox.y + currentCanvasBox.height,
+    );
+  };
+
   const assertTabletTouchEnvironment = async () => {
     const touchEnvironment = await page.evaluate(() => ({
       hasTouchPoints: navigator.maxTouchPoints > 0,
@@ -125,6 +146,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
   }
 
   if (isTablet) {
+    await assertTabletWorkspaceLayout();
     await assertTabletTouchEnvironment();
     await assertTouchCanvasNoPageScroll();
   }
