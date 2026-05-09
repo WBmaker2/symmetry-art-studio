@@ -46,6 +46,51 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await dispatchPointer('pointermove', endX, endY, 1);
   await dispatchPointer('pointerup', endX, endY, 0);
 
+  const isPaintedPoint = async (xFraction: number, yFraction: number) =>
+    canvas.evaluate(
+      (element, { xFraction, yFraction }) => {
+        const background = { r: 255, g: 253, b: 248 };
+        const canvas = element as HTMLCanvasElement;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          return false;
+        }
+
+        const x = Math.round(canvas.width * xFraction);
+        const y = Math.round(canvas.height * yFraction);
+        const offsets = [-2, -1, 0, 1, 2];
+
+        for (const dy of offsets) {
+          for (const dx of offsets) {
+            const px = x + dx;
+            const py = y + dy;
+            if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) {
+              continue;
+            }
+
+            const pixel = context.getImageData(px, py, 1, 1).data;
+            if (
+              pixel[3] > 0 &&
+              (pixel[0] !== background.r ||
+                pixel[1] !== background.g ||
+                pixel[2] !== background.b)
+            ) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      },
+      { xFraction, yFraction },
+    );
+
+  const isPainted = await isPaintedPoint(0.25, 0.45);
+  const reflectedIsPainted = await isPaintedPoint(0.75, 0.45);
+
+  expect(isPainted).toBe(true);
+  expect(reflectedIsPainted).toBe(true);
+
   await expect(page.getByRole('status')).toContainText('획을 완성했습니다');
 
   await page.getByRole('radio', { name: '대각선 대칭축' }).click();

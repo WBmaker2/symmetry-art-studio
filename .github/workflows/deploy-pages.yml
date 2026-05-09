@@ -41,6 +41,12 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser tests
+        run: npm run e2e
+
       - name: Build
         run: npm run build
 
@@ -63,3 +69,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify live Pages site
+        run: npm run verify:pages -- "${{ steps.deployment.outputs.page_url }}"

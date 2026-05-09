@@ -38,3 +38,19 @@ npm run e2e
 2. 가로 대칭축으로 바꾸어 위아래 반사가 어떻게 달라지는지 비교합니다.
 3. 대각선 대칭축에서는 선의 방향이 어떻게 바뀌는지 관찰하게 합니다.
 4. 완성한 그림을 PNG로 저장해 미술 활동 결과물로 공유합니다.
+
+## 공개 URL
+
+https://wbmaker2.github.io/symmetry-art-studio/
+
+## 타입 검사와 린트
+
+`npm run lint`는 내부적으로 `npm run typecheck`를 실행합니다.
+
+## 배포 검증
+
+배포 URL 공개 페이지에서 앱 제목과 번들 자산 응답을 검증하려면 다음 명령을 실행합니다.
+
+```bash
+npm run verify:pages
+```
