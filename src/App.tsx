@@ -24,31 +24,98 @@ export default function App() {
   const [color, setColor] = useState(colors[0].value);
   const [brushSize, setBrushSize] = useState(10);
   const [tool, setTool] = useState<DrawingTool>('brush');
+  const [undoSignal, setUndoSignal] = useState(0);
+  const [redoSignal, setRedoSignal] = useState(0);
+  const [saveSignal, setSaveSignal] = useState(0);
   const [clearSignal, setClearSignal] = useState(0);
+  const [clearPending, setClearPending] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const [activityMessage, setActivityMessage] = useState(
     '세로 대칭축을 기준으로 시작해 보세요.',
   );
 
   const handleSave = useCallback(() => {
-    window.dispatchEvent(new Event('symmetry-art-save-request'));
+    setSaveSignal((value) => value + 1);
   }, []);
 
   const onAxisChange = useCallback((nextAxis: AxisMode) => {
+    setClearPending(false);
     setAxis(nextAxis);
     setActivityMessage(`${axisLabels[nextAxis]}으로 바꾸었습니다.`);
   }, []);
 
   const onClear = useCallback(() => {
+    if (!clearPending) {
+      setClearPending(true);
+      setActivityMessage('한 번 더 누르면 캔버스를 비웁니다');
+      return;
+    }
+
     setClearSignal((value) => value + 1);
+    setClearPending(false);
+  }, [clearPending]);
+
+  const onUndo = useCallback(() => {
+    setUndoSignal((value) => value + 1);
+  }, []);
+
+  const onRedo = useCallback(() => {
+    setRedoSignal((value) => value + 1);
+  }, []);
+
+  const onHistoryChange = useCallback(
+    ({
+      canUndo: nextUndoEnabled,
+      canRedo: nextRedoEnabled,
+    }: {
+      canUndo: boolean;
+      canRedo: boolean;
+    }) => {
+      setCanUndo(nextUndoEnabled);
+      setCanRedo(nextRedoEnabled);
+    },
+    [],
+  );
+
+  const handleClearComplete = useCallback(() => {
+    setClearPending(false);
     setActivityMessage('캔버스를 비웠습니다.');
+  }, []);
+
+  const onUndoComplete = useCallback((message: string) => {
+    setActivityMessage(message);
+    setClearPending(false);
+  }, []);
+
+  const onRedoComplete = useCallback((message: string) => {
+    setActivityMessage(message);
+    setClearPending(false);
+  }, []);
+
+  const onSaveComplete = useCallback((message: string) => {
+    setActivityMessage(message);
+    setClearPending(false);
+  }, []);
+
+  const onColorChange = useCallback((nextColor: string) => {
+    setClearPending(false);
+    setColor(nextColor);
+  }, []);
+
+  const onBrushSizeChange = useCallback((nextBrushSize: number) => {
+    setClearPending(false);
+    setBrushSize(nextBrushSize);
+  }, []);
+
+  const onToolChange = useCallback((nextTool: DrawingTool) => {
+    setClearPending(false);
+    setTool(nextTool);
   }, []);
 
   const onStrokeChange = useCallback((message: string) => {
+    setClearPending(false);
     setActivityMessage(message);
-  }, []);
-
-  const handleClearComplete = useCallback(() => {
-    setActivityMessage('캔버스를 비웠습니다.');
   }, []);
 
   const statusText = useMemo(
@@ -72,11 +139,16 @@ export default function App() {
           color={color}
           brushSize={brushSize}
           tool={tool}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          clearPending={clearPending}
           colors={colors}
           onAxisChange={onAxisChange}
-          onColorChange={setColor}
-          onBrushSizeChange={setBrushSize}
-          onToolChange={setTool}
+          onColorChange={onColorChange}
+          onBrushSizeChange={onBrushSizeChange}
+          onToolChange={onToolChange}
           onClear={onClear}
           onSave={handleSave}
         />
@@ -85,9 +157,16 @@ export default function App() {
           color={color}
           brushSize={brushSize}
           tool={tool}
+          undoSignal={undoSignal}
+          redoSignal={redoSignal}
+          saveSignal={saveSignal}
           clearSignal={clearSignal}
+          onUndoComplete={onUndoComplete}
+          onRedoComplete={onRedoComplete}
+          onSaveComplete={onSaveComplete}
           onClearComplete={handleClearComplete}
           onStrokeChange={onStrokeChange}
+          onHistoryChange={onHistoryChange}
         />
         <LearningPanel activityMessage={activityMessage} />
       </section>

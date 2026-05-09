@@ -1,7 +1,9 @@
 import {
+  Redo2,
   Brush,
   Download,
   Eraser,
+  Undo2,
   RotateCcw,
   Slash,
 } from 'lucide-react';
@@ -25,7 +27,12 @@ type StudioToolbarProps = {
   onColorChange: (color: string) => void;
   onBrushSizeChange: (brushSize: number) => void;
   onToolChange: (tool: DrawingTool) => void;
+  onUndo: () => void;
+  onRedo: () => void;
   onClear: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  clearPending: boolean;
   onSave: () => void;
 };
 
@@ -41,7 +48,12 @@ export function StudioToolbar({
   onColorChange,
   onBrushSizeChange,
   onToolChange,
+  onUndo,
+  onRedo,
   onClear,
+  canUndo,
+  canRedo,
+  clearPending,
   onSave,
 }: StudioToolbarProps) {
   return (
@@ -124,6 +136,28 @@ export function StudioToolbar({
           <button
             type="button"
             className="icon-button"
+            onClick={onUndo}
+            aria-disabled={!canUndo}
+            disabled={!canUndo}
+            title="되돌리기"
+          >
+            <Undo2 aria-hidden="true" size={18} />
+            되돌리기
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onRedo}
+            aria-disabled={!canRedo}
+            disabled={!canRedo}
+            title="다시 실행"
+          >
+            <Redo2 aria-hidden="true" size={18} />
+            다시 실행
+          </button>
+          <button
+            type="button"
+            className="icon-button"
             onClick={() => onToolChange(tool === 'eraser' ? 'brush' : 'eraser')}
             aria-pressed={tool === 'eraser'}
             title="지우개"
@@ -135,10 +169,10 @@ export function StudioToolbar({
             type="button"
             className="icon-button"
             onClick={onClear}
-            title="전체 지우기"
+            title={clearPending ? '전체 지우기 확인' : '전체 지우기'}
           >
             <RotateCcw aria-hidden="true" size={18} />
-            전체 지우기
+            {clearPending ? '전체 지우기 확인' : '전체 지우기'}
           </button>
           <button
             type="button"

@@ -40,7 +40,44 @@ describe('Symmetry Art Studio app shell', () => {
     expect(screen.getByLabelText('대칭 그림 캔버스')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '전체 지우기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('한 번 더 누르면 캔버스를 비웁니다');
+
+    await user.click(screen.getByRole('button', { name: '전체 지우기 확인' }));
     expect(screen.getByRole('status')).toHaveTextContent('캔버스를 비웠습니다');
+  });
+
+  it('requires clear confirmation and supports undo/redo for one stroke', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+    fireEvent.pointerDown(canvas, {
+      pointerId: 9,
+      clientX: 200,
+      clientY: 200,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 9,
+      clientX: 280,
+      clientY: 240,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 9,
+      clientX: 280,
+      clientY: 240,
+    });
+
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '되돌리기' }));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '마지막 획을 되돌렸습니다',
+    );
+
+    expect(screen.getByRole('button', { name: '다시 실행' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '다시 실행' }));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '되돌린 획을 다시 그렸습니다',
+    );
   });
 
   it('uses a square drawing surface so diagonal symmetry stays visible', () => {
@@ -76,6 +113,19 @@ describe('Symmetry Art Studio app shell', () => {
     await user.click(screen.getByRole('button', { name: '파랑' }));
 
     expect(canvasContext.clearRect).toHaveBeenCalledTimes(clearCountBefore);
+  });
+
+  it('ignores pointer moves from non-active pointers', () => {
+    render(<App />);
+
+    const canvas = screen.getByLabelText('대칭 그림 캔버스');
+    fireEvent.pointerDown(canvas, { pointerId: 1, clientX: 220, clientY: 220 });
+    fireEvent.pointerMove(canvas, { pointerId: 2, clientX: 700, clientY: 700 });
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 260, clientY: 260 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 260, clientY: 260 });
+
+    expect(canvasContext.lineTo).not.toHaveBeenCalledWith(700, 700);
+    expect(canvasContext.lineTo).toHaveBeenCalledWith(260, 260);
   });
 
   it('creates a PNG data URL and updates status on save', async () => {
