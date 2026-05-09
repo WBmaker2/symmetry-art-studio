@@ -31,6 +31,7 @@ export default function App() {
   const [clearPending, setClearPending] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [visitedAxes, setVisitedAxes] = useState<AxisMode[]>(['vertical']);
   const [activityMessage, setActivityMessage] = useState(
     '세로 대칭축을 기준으로 시작해 보세요.',
   );
@@ -41,6 +42,11 @@ export default function App() {
 
   const onAxisChange = useCallback((nextAxis: AxisMode) => {
     setClearPending(false);
+    setVisitedAxes((prevVisitedAxes) =>
+      prevVisitedAxes.includes(nextAxis)
+        ? prevVisitedAxes
+        : [...prevVisitedAxes, nextAxis],
+    );
     setAxis(nextAxis);
     setActivityMessage(`${axisLabels[nextAxis]}으로 바꾸었습니다.`);
   }, []);
@@ -168,7 +174,10 @@ export default function App() {
           onStrokeChange={onStrokeChange}
           onHistoryChange={onHistoryChange}
         />
-        <LearningPanel activityMessage={activityMessage} />
+        <LearningPanel
+          activityMessage={activityMessage}
+          visitedAxes={visitedAxes}
+        />
       </section>
 
       <p className="sr-status" role="status" aria-live="polite">

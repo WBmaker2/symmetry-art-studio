@@ -111,7 +111,7 @@ button {
   font-weight: 700;
 }
 
-.segment-button[aria-pressed='true'],
+.segment-button[aria-checked='true'],
 .icon-button[aria-pressed='true'] {
   border-color: var(--accent);
   background: #dbeafe;
@@ -126,16 +126,56 @@ button {
 
 .color-swatch {
   aspect-ratio: 1;
-  min-width: 32px;
+  min-width: 36px;
+  min-height: 48px;
   border: 3px solid #ffffff;
   border-radius: 999px;
   box-shadow: 0 0 0 1px var(--line);
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .color-swatch[aria-pressed='true'] {
   box-shadow:
     0 0 0 2px var(--accent),
     0 8px 16px rgba(37, 99, 235, 0.22);
+}
+
+.swatch-label {
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.mission-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.mission-item {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--muted);
+  line-height: 1.35;
+  font-size: 0.9rem;
+}
+
+.mission-item.complete {
+  color: var(--accent-strong);
+  font-weight: 700;
 }
 
 .range-label {

@@ -63,13 +63,14 @@ export function StudioToolbar({
         aria-labelledby="axis-control-title"
       >
         <h2 id="axis-control-title">대칭축</h2>
-        <div className="segmented-control" role="group" aria-label="대칭축 선택">
+        <div className="segmented-control" role="radiogroup" aria-label="대칭축 선택">
           {axisOrder.map((axisMode) => (
             <button
               key={axisMode}
               type="button"
+              role="radio"
               onClick={() => onAxisChange(axisMode)}
-              aria-pressed={axis === axisMode}
+              aria-checked={axis === axisMode}
               className="segment-button"
             >
               {axisLabels[axisMode]}
@@ -96,7 +97,9 @@ export function StudioToolbar({
                 onToolChange('brush');
               }}
               style={{ backgroundColor: swatch.value }}
-            />
+            >
+              <span className="swatch-label">{swatch.name}</span>
+            </button>
           ))}
         </div>
       </section>

@@ -13,8 +13,12 @@ describe('Symmetry Art Studio app shell', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: '가로 대칭축' }));
+    await user.click(screen.getByRole('radio', { name: '가로 대칭축' }));
     expect(screen.getByRole('status')).toHaveTextContent('가로 대칭축');
+    expect(screen.getByRole('radio', { name: '가로 대칭축' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
 
     await user.click(screen.getByRole('button', { name: '지우개' }));
     expect(screen.getByRole('button', { name: '지우개' })).toHaveAttribute(
@@ -156,11 +160,52 @@ describe('Symmetry Art Studio app shell', () => {
     render(<App />);
 
     const panel = screen.getByLabelText('수업 관찰 질문');
-    await user.click(screen.getByRole('button', { name: '가로 대칭축' }));
+    await user.click(screen.getByRole('radio', { name: '가로 대칭축' }));
 
     expect(screen.getByRole('status')).toHaveTextContent('가로 대칭축으로 바꾸었습니다.');
     expect(screen.getByText('가로 대칭축으로 바꾸었습니다.')).toBeInTheDocument();
     expect(panel).toHaveTextContent('가로 대칭축으로 바꾸었습니다.');
+  });
+
+  it('uses a radiogroup for exclusive symmetry-axis selection', () => {
+    render(<App />);
+
+    const axisGroup = screen.getByRole('radiogroup', { name: '대칭축 선택' });
+    expect(axisGroup).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '세로 대칭축' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('radio', { name: '가로 대칭축' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    expect(screen.getByRole('radio', { name: '대각선 대칭축' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  it('tracks visited-axis classroom missions', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.getByText('세로축으로 시작 선 그리기')).toBeInTheDocument();
+    expect(
+      screen.getByRole('listitem', { name: /세로축으로 시작 선 그리기/ }),
+    ).toHaveAttribute('aria-label', '세로축으로 시작 선 그리기 완료');
+
+    await user.click(screen.getByRole('radio', { name: '가로 대칭축' }));
+    expect(
+      screen.getByRole('listitem', { name: /가로축으로 위아래 반사 비교하기/ }),
+    ).toHaveAttribute('aria-label', '가로축으로 위아래 반사 비교하기 완료');
+
+    await user.click(screen.getByRole('radio', { name: '대각선 대칭축' }));
+    expect(
+      screen.getByRole('listitem', { name: /대각선축으로 방향 변화 관찰하기/ }),
+    ).toHaveAttribute('aria-label', '대각선축으로 방향 변화 관찰하기 완료');
+    expect(screen.getByRole('status')).toHaveTextContent('대각선 대칭축');
+    expect(screen.getByText('세 축 비교하기')).toBeInTheDocument();
   });
 
   it('shows classroom learning prompts tied to symmetry and art standards', () => {
