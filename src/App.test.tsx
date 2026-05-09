@@ -258,7 +258,7 @@ describe('Symmetry Art Studio app shell', () => {
   it('shows classroom learning prompts tied to symmetry and art standards', () => {
     render(<App />);
 
-    expect(screen.getByText('[6수03-03]')).toBeInTheDocument();
+    expect(screen.getByText('[6수03-02]')).toBeInTheDocument();
     expect(screen.getByText('[6미02-02]')).toBeInTheDocument();
     expect(screen.getByText('관찰 질문')).toBeInTheDocument();
   });

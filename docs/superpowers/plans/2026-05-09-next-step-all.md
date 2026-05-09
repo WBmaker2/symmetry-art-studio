@@ -64,8 +64,9 @@ The current app already supports reflected free drawing, axis switching, color/b
 ### Acceptance Criteria
 
 - The document is Korean, teacher-facing, and directly tied to grades 5-6 math/art.
-- It references `[6수03-03]` and `[6미02-02]`.
+- It references `[6수03-02]` `[6미02-02]`.
 - It does not describe the app as a marketing landing page.
+- It keeps point symmetry as a follow-up comparison/extension while the main flow centers on axis-based symmetry reflection.
 
 ## Task 3: Add Symmetry Exploration v0.2 Features
 
@@ -133,4 +134,3 @@ The current app already supports reflected free drawing, axis switching, color/b
 - `npm run verify:pages` after deployment
 - GitHub Pages workflow success with live asset verification
 - HVC admin/public card verification
-
