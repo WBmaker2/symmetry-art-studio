@@ -33,7 +33,7 @@ npm run build
 npm run e2e
 ```
 
-`npm run e2e`는 desktop/tablet/mobile 프로젝트에서 동일 시나리오를 실행해 반응형 및 터치 동작을 함께 검증합니다.
+`npm run e2e`는 desktop/tablet/mobile 프로젝트에서 동일 시나리오를 실행해 반응형 및 터치 동작을 함께 검증합니다. tablet은 CI 호환을 위해 Chromium 기반 iPad Pro 11 에뮬레이션으로 실행합니다.
 
 ## 수업 운영 팁
 

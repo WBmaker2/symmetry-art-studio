@@ -55,6 +55,17 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
     }
   };
 
+  const assertTabletTouchEnvironment = async () => {
+    const touchEnvironment = await page.evaluate(() => ({
+      hasTouchPoints: navigator.maxTouchPoints > 0,
+      hasCoarsePointer: window.matchMedia('(pointer: coarse)').matches,
+    }));
+
+    expect(touchEnvironment.hasTouchPoints || touchEnvironment.hasCoarsePointer).toBe(
+      true,
+    );
+  };
+
   const assertTouchCanvasNoPageScroll = async () => {
     const startX = box.x + box.width * 0.24;
     const startY = box.y + box.height * 0.32;
@@ -114,6 +125,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
   }
 
   if (isTablet) {
+    await assertTabletTouchEnvironment();
     await assertTouchCanvasNoPageScroll();
   }
 
@@ -181,6 +193,32 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
     const y = currentBox.y + currentBox.height * yFraction;
     await dispatchPointer('pointerdown', x, y, 1, pointerType);
     await dispatchPointer('pointerup', x, y, 0, pointerType);
+    return { xFraction, yFraction };
+  };
+
+  const tapCanvasFraction = async (xFraction: number, yFraction: number) => {
+    await canvas.scrollIntoViewIfNeeded();
+    const currentBox = await canvas.boundingBox();
+    expect(currentBox).not.toBeNull();
+    if (!currentBox) {
+      throw new Error('Canvas bounding box was not available');
+    }
+
+    const x = currentBox.x + currentBox.width * xFraction;
+    const y = currentBox.y + currentBox.height * yFraction;
+    const scrollBefore = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+    }));
+
+    await page.touchscreen.tap(x, y);
+
+    const scrollAfter = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+    }));
+    expect(scrollAfter).toEqual(scrollBefore);
+
     return { xFraction, yFraction };
   };
 
@@ -390,16 +428,20 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
     'false',
   );
 
-  const firstPoint = await clickCanvasFraction(0.22, 0.5, drawingPointerType);
+  const firstPoint = isTablet
+    ? await tapCanvasFraction(0.22, 0.5)
+    : await clickCanvasFraction(0.22, 0.5, drawingPointerType);
   const reflectedXFraction = 1 - firstPoint.xFraction;
   const noHintGuideXFraction = (firstPoint.xFraction + 0.5) / 2;
 
-  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction, brushColor)).toBe(
-    true,
-  );
-  expect(
-    await isPaintedPoint(reflectedXFraction, firstPoint.yFraction, reflectedPointColor),
-  ).toBe(true);
+  await expect
+    .poll(() => isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction, brushColor))
+    .toBe(true);
+  await expect
+    .poll(() =>
+      isPaintedPoint(reflectedXFraction, firstPoint.yFraction, reflectedPointColor),
+    )
+    .toBe(true);
   expect(
     await isPaintedPoint(noHintGuideXFraction, firstPoint.yFraction, reflectedPointColor),
   ).toBe(false);

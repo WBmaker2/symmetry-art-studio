@@ -22,7 +22,7 @@ export default defineConfig({
     },
     {
       name: 'tablet',
-      use: { ...devices['iPad Pro 11'] },
+      use: { ...devices['iPad Pro 11'], browserName: 'chromium' },
     },
     {
       name: 'mobile',
