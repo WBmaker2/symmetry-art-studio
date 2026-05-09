@@ -383,9 +383,13 @@ describe('Symmetry Art Studio app shell', () => {
 
   it('copies share text to clipboard and confirms in status messages', async () => {
     const user = userEvent.setup();
+    let calledWithCorrectReceiver = false;
     const originalClipboard = setClipboardWriteText(() => Promise.resolve());
     try {
-      const writeText = vi.fn((_text: string) => Promise.resolve());
+      const writeText = vi.fn(function (this: Clipboard, _text: string) {
+        calledWithCorrectReceiver = this === navigator.clipboard;
+        return Promise.resolve();
+      });
       Object.defineProperty(navigator, 'clipboard', {
         configurable: true,
         value: {
@@ -405,6 +409,7 @@ describe('Symmetry Art Studio app shell', () => {
           '공유 문구를 클립보드에 복사했습니다.',
         ),
       );
+      expect(calledWithCorrectReceiver).toBe(true);
       expect(screen.getByLabelText('수업 관찰 질문')).toHaveTextContent(
         '공유 문구를 클립보드에 복사했습니다.',
       );
