@@ -5,6 +5,11 @@ export type CanvasContextMock = {
   beginPath: ReturnType<typeof vi.fn>;
   clearRect: ReturnType<typeof vi.fn>;
   fillRect: ReturnType<typeof vi.fn>;
+  fill: ReturnType<typeof vi.fn>;
+  arc: ReturnType<typeof vi.fn>;
+  fillText: ReturnType<typeof vi.fn>;
+  strokeRect: ReturnType<typeof vi.fn>;
+  measureText: ReturnType<typeof vi.fn>;
   lineTo: ReturnType<typeof vi.fn>;
   moveTo: ReturnType<typeof vi.fn>;
   restore: ReturnType<typeof vi.fn>;
@@ -17,6 +22,11 @@ export const canvasContext: CanvasContextMock = {
   beginPath: vi.fn(),
   clearRect: vi.fn(),
   fillRect: vi.fn(),
+  fill: vi.fn(),
+  arc: vi.fn(),
+  fillText: vi.fn(),
+  strokeRect: vi.fn(),
+  measureText: vi.fn(() => ({ width: 0 }) as TextMetrics),
   lineTo: vi.fn(),
   moveTo: vi.fn(),
   restore: vi.fn(),

@@ -34,6 +34,20 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     });
   };
 
+  const clickCanvasFraction = async (xFraction: number, yFraction: number) => {
+    const currentBox = await canvas.boundingBox();
+    expect(currentBox).not.toBeNull();
+    if (!currentBox) {
+      throw new Error('Canvas bounding box was not available');
+    }
+
+    const x = currentBox.x + currentBox.width * xFraction;
+    const y = currentBox.y + currentBox.height * yFraction;
+    await dispatchPointer('pointerdown', x, y, 1, 'mouse');
+    await dispatchPointer('pointerup', x, y, 0, 'mouse');
+    return { xFraction, yFraction };
+  };
+
   const startX = box.x + box.width * 0.25;
   const startY = box.y + box.height * 0.4;
   const midX = box.x + box.width * 0.32;
@@ -99,6 +113,9 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await page.getByRole('radio', { name: '대각선 대칭축' }).click();
   await expect(page.getByRole('status')).toContainText('대각선 대칭축');
 
+  await page.getByRole('radio', { name: '세로 대칭축' }).click();
+  await expect(page.getByRole('status')).toContainText('세로 대칭축');
+
   await page.getByRole('button', { name: '전체 지우기' }).click();
   await expect(page.getByRole('status')).toContainText('한 번 더 누르면 캔버스를 비웁니다');
 
@@ -106,16 +123,48 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
 
   await page.getByRole('button', { name: '격자 보기' }).click();
-  await page.getByRole('button', { name: '거리 힌트' }).click();
   await page.getByRole('button', { name: '점 탐구' }).click();
 
   await expect(page.getByRole('button', { name: '점 탐구' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
+  await expect(page.getByRole('button', { name: '거리 힌트' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
 
-  const pointX = box.x + box.width * 0.22;
-  const pointY = box.y + box.height * 0.5;
-  await dispatchPointer('pointerdown', pointX, pointY, 1, 'mouse');
-  await dispatchPointer('pointerup', pointX, pointY, 0, 'mouse');
+  const firstPoint = await clickCanvasFraction(0.22, 0.5);
+  const reflectedXFraction = 1 - firstPoint.xFraction;
+  const noHintGuideXFraction = (firstPoint.xFraction + 0.5) / 2;
+
+  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction)).toBe(true);
+  expect(await isPaintedPoint(reflectedXFraction, firstPoint.yFraction)).toBe(true);
+  expect(await isPaintedPoint(noHintGuideXFraction, firstPoint.yFraction)).toBe(false);
+
+  await page.getByRole('button', { name: '거리 힌트' }).click();
+  await expect(page.getByRole('button', { name: '거리 힌트' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByRole('status')).toContainText(
+    '거리 힌트를 켰습니다. 점 탐구 모드일 때 가이드가 보여집니다.',
+  );
+
+  const secondPoint = await clickCanvasFraction(0.26, 0.64);
+  await expect(page.getByRole('status')).toContainText(
+    '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+  );
+  await expect(page.locator('[aria-label="수업 관찰 질문"]')).toContainText(
+    '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+  );
+
+  const guideXFraction = (secondPoint.xFraction + 0.5) / 2;
+  expect(await isPaintedPoint(guideXFraction, secondPoint.yFraction)).toBe(true);
+
+  await page.getByRole('button', { name: '전체 지우기' }).click();
+  await expect(page.getByRole('status')).toContainText('한 번 더 누르면 캔버스를 비웁니다');
+  await page.getByRole('button', { name: '전체 지우기 확인' }).click();
+  await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
+  expect(await isPaintedPoint(firstPoint.xFraction, firstPoint.yFraction)).toBe(false);
 });

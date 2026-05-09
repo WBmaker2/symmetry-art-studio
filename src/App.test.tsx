@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
@@ -65,6 +72,7 @@ describe('Symmetry Art Studio app shell', () => {
 
     const canvas = screen.getByLabelText('대칭 그림 캔버스');
     const pointMode = screen.getByRole('button', { name: '점 탐구' });
+    const panel = screen.getByLabelText('수업 관찰 질문');
     await user.click(pointMode);
 
     fireEvent.pointerDown(canvas, { pointerId: 3, clientX: 200, clientY: 220 });
@@ -73,17 +81,83 @@ describe('Symmetry Art Studio app shell', () => {
         '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
       ),
     );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+    );
+    expect(panel).toHaveTextContent(
+      '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+    );
 
-    expect(canvasContext.beginPath).toHaveBeenCalled();
+    expect(canvasContext.arc).toHaveBeenCalledTimes(2);
+    expect(canvasContext.fill).toHaveBeenCalled();
+
+    const labels = canvasContext.fillText.mock.calls.map(([value]) => String(value));
+    expect(labels).toContain('A');
+    expect(labels).toContain(`A'`);
+    expect(canvasContext.fillText).toHaveBeenCalledTimes(2);
 
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '되돌리기' }));
     expect(screen.getByRole('status')).toHaveTextContent('마지막 획을 되돌렸습니다');
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '다시 실행' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: '다시 실행' }));
     expect(screen.getByRole('status')).toHaveTextContent('되돌린 획을 다시 그렸습니다');
     expect(screen.getByRole('button', { name: '다시 실행' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: '전체 지우기' }));
+    expect(screen.getByRole('status')).toHaveTextContent('한 번 더 누르면 캔버스를 비웁니다');
+    await user.click(screen.getByRole('button', { name: '전체 지우기 확인' }));
+    expect(screen.getByRole('status')).toHaveTextContent('캔버스를 비웠습니다');
+  });
+
+  it('shows guide-line rendering differences when distance hints are toggled in point mode', async () => {
+    const capturePointRender = async (distanceHintsOn: boolean) => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      const pointMode = screen.getByRole('button', { name: '점 탐구' });
+      const distanceHint = screen.getByRole('button', { name: '거리 힌트' });
+      await user.click(pointMode);
+
+      if (distanceHintsOn) {
+        await user.click(distanceHint);
+        await waitFor(() =>
+          expect(distanceHint).toHaveAttribute('aria-pressed', 'true'),
+        );
+      } else {
+        expect(distanceHint).toHaveAttribute('aria-pressed', 'false');
+      }
+
+      fireEvent.pointerDown(screen.getByLabelText('대칭 그림 캔버스'), {
+        pointerId: 4,
+        clientX: 220,
+        clientY: 260,
+      });
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
+        ),
+      );
+
+      return {
+        lineTo: canvasContext.lineTo.mock.calls.length,
+        fillText: canvasContext.fillText.mock.calls.length,
+      };
+    };
+
+    resetCanvasMocks();
+    const noHintRender = await capturePointRender(false);
+    cleanup();
+
+    resetCanvasMocks();
+    const hintRender = await capturePointRender(true);
+
+    expect(noHintRender.fillText).toBe(2);
+    expect(hintRender.fillText).toBe(3);
+    expect(hintRender.lineTo).toBeGreaterThan(noHintRender.lineTo);
   });
 
   it('renders the drawing canvas and clear command', async () => {
