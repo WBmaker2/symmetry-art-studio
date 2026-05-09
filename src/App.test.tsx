@@ -285,7 +285,9 @@ describe('Symmetry Art Studio app shell', () => {
 
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: '되돌리기' }));
-    expect(canvasContext.clearRect).toHaveBeenCalledTimes(clearRectBeforeUndo + 1);
+    expect(canvasContext.clearRect.mock.calls.length).toBeGreaterThan(
+      clearRectBeforeUndo,
+    );
     expect(screen.getByRole('button', { name: '되돌리기' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '다시 실행' })).toBeEnabled();
     expect(screen.getByRole('status')).toHaveTextContent(

@@ -330,8 +330,7 @@ export default function CanvasStage({
     const artworkCtx = artworkContextRef.current;
 
     if (artworkCtx) {
-      artworkCtx.fillStyle = '#fffdf8';
-      artworkCtx.fillRect(0, 0, canvas.width, canvas.height);
+      artworkCtx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     const drawArtworkAction = (

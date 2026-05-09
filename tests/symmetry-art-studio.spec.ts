@@ -15,6 +15,36 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     throw new Error('Canvas bounding box was not available');
   }
 
+  const hasInitialGridPixel = async () =>
+    canvas.evaluate((element) => {
+      const background = { r: 255, g: 253, b: 248 };
+      const canvas = element as HTMLCanvasElement;
+      const context = canvas.getContext('2d');
+      if (!context) {
+        return false;
+      }
+
+      const x = Math.round((280 / 960) * canvas.width);
+      const y = Math.round((400 / 960) * canvas.height);
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const pixel = context.getImageData(x + dx, y + dy, 1, 1).data;
+          if (
+            pixel[3] > 0 &&
+            (pixel[0] !== background.r ||
+              pixel[1] !== background.g ||
+              pixel[2] !== background.b)
+          ) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+
+  await expect.poll(hasInitialGridPixel).toBe(true);
+
   const dispatchPointer = async (
     type: 'pointerdown' | 'pointermove' | 'pointerup',
     x: number,
