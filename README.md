@@ -54,3 +54,10 @@ https://wbmaker2.github.io/symmetry-art-studio/
 ```bash
 npm run verify:pages
 ```
+
+CI 배포 검증은 배포된 HTML이 `dist/index.html`에 있는 빌드 산출물 자산 경로와 일치하는지 확인합니다.  
+필요하면 다른 기대 산출물 경로를 지정할 수 있습니다.
+
+```bash
+npm run verify:pages "https://wbmaker2.github.io/symmetry-art-studio/" --expected-index dist/index.html
+```

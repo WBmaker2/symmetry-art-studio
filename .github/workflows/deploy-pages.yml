@@ -58,6 +58,12 @@ jobs:
         with:
           path: dist
 
+      - name: Save built index for verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages-dist-index
+          path: dist/index.html
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -78,5 +84,13 @@ jobs:
         with:
           node-version: 24
 
+      - name: Download built index for verification
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages-dist-index
+          path: verify-dist
+
       - name: Verify live Pages site
-        run: npm run verify:pages -- "${{ steps.deployment.outputs.page_url }}"
+        run: >
+          npm run verify:pages -- "${{ steps.deployment.outputs.page_url }}"
+          --expected-index verify-dist/index.html
