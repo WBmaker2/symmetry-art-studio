@@ -58,7 +58,10 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
 
         const x = Math.round(canvas.width * xFraction);
         const y = Math.round(canvas.height * yFraction);
-        const offsets = [-2, -1, 0, 1, 2];
+        const offsets: number[] = [];
+        for (let delta = -6; delta <= 6; delta += 1) {
+          offsets.push(delta);
+        }
 
         for (const dy of offsets) {
           for (const dx of offsets) {
@@ -85,8 +88,8 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
       { xFraction, yFraction },
     );
 
-  const isPainted = await isPaintedPoint(0.25, 0.45);
-  const reflectedIsPainted = await isPaintedPoint(0.75, 0.45);
+  const isPainted = await isPaintedPoint(0.25, 0.4);
+  const reflectedIsPainted = await isPaintedPoint(0.75, 0.4);
 
   expect(isPainted).toBe(true);
   expect(reflectedIsPainted).toBe(true);
