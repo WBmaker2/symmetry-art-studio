@@ -1,7 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-test('student can draw, switch axes, and clear the studio', async ({ page }) => {
+const PRIMARY_TOOL_BUTTONS = [
+  '점 탐구',
+  '거리 힌트',
+  '작품 카드 저장',
+  '공유 문구 복사',
+  '전체 지우기',
+];
+
+type PointerKind = 'pen' | 'mouse' | 'touch';
+
+test('student can draw, switch axes, and clear the studio', async ({ page }, testInfo) => {
   await page.goto('/');
+  const isTablet = testInfo.project.name === 'tablet';
+  const isMobile = testInfo.project.name === 'mobile';
+  const drawingPointerType: PointerKind = isTablet ? 'touch' : 'pen';
 
   await expect(
     page.getByRole('heading', { name: '마법의 데칼코마니: 대칭 아트 스튜디오' }),
@@ -13,6 +26,95 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   expect(box).not.toBeNull();
   if (!box) {
     throw new Error('Canvas bounding box was not available');
+  }
+
+  const assertNoHorizontalOverflow = async () => {
+    const overflow = await page.evaluate(() => ({
+      docScrollWidth: document.documentElement.scrollWidth,
+      workspaceScrollWidth: document.querySelector('.workspace')?.scrollWidth ?? 0,
+      shellScrollWidth: document.querySelector('.app-shell')?.scrollWidth ?? 0,
+      innerWidth: window.innerWidth,
+    }));
+
+    expect(overflow.docScrollWidth).toBeLessThanOrEqual(overflow.innerWidth + 1);
+    expect(overflow.workspaceScrollWidth).toBeLessThanOrEqual(overflow.innerWidth + 1);
+    expect(overflow.shellScrollWidth).toBeLessThanOrEqual(overflow.innerWidth + 1);
+  };
+
+  const assertPrimaryTouchTargets = async () => {
+    for (const buttonName of PRIMARY_TOOL_BUTTONS) {
+      const button = page.getByRole('button', { name: buttonName });
+      await expect(button).toBeVisible();
+      const buttonBox = await button.boundingBox();
+      expect(buttonBox).not.toBeNull();
+      if (!buttonBox) {
+        throw new Error(`Button "${buttonName}" bounding box was not available`);
+      }
+
+      expect(buttonBox.height).toBeGreaterThanOrEqual(44);
+    }
+  };
+
+  const assertTouchCanvasNoPageScroll = async () => {
+    const startX = box.x + box.width * 0.24;
+    const startY = box.y + box.height * 0.32;
+    const endX = box.x + box.width * 0.42;
+    const endY = box.y + box.height * 0.5;
+    const scrollBefore = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+    }));
+
+    await canvas.dispatchEvent('pointerdown', {
+      pointerId: 77,
+      pointerType: drawingPointerType,
+      isPrimary: true,
+      clientX: startX,
+      clientY: startY,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    });
+    await canvas.dispatchEvent('pointermove', {
+      pointerId: 77,
+      pointerType: drawingPointerType,
+      isPrimary: true,
+      clientX: endX,
+      clientY: endY,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    });
+    await canvas.dispatchEvent('pointerup', {
+      pointerId: 77,
+      pointerType: drawingPointerType,
+      isPrimary: true,
+      clientX: endX,
+      clientY: endY,
+      buttons: 0,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    const scrollAfter = await page.evaluate(() => ({
+      x: window.scrollX,
+      y: window.scrollY,
+    }));
+    expect(scrollAfter).toEqual(scrollBefore);
+  };
+
+  const canvasTouchAction = await canvas.evaluate((element) => {
+    return getComputedStyle(element).touchAction;
+  });
+  expect(canvasTouchAction).toBe('none');
+
+  if (isTablet || isMobile) {
+    await assertNoHorizontalOverflow();
+    await assertPrimaryTouchTargets();
+  }
+
+  if (isTablet) {
+    await assertTouchCanvasNoPageScroll();
   }
 
   const hasInitialGridPixel = async () =>
@@ -50,7 +152,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     x: number,
     y: number,
     buttons: number,
-    pointerType: 'pen' | 'mouse' = 'pen',
+    pointerType: PointerKind = drawingPointerType,
   ) => {
     await canvas.dispatchEvent(type, {
       pointerId: 1,
@@ -64,7 +166,11 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     });
   };
 
-  const clickCanvasFraction = async (xFraction: number, yFraction: number) => {
+  const clickCanvasFraction = async (
+    xFraction: number,
+    yFraction: number,
+    pointerType: PointerKind = drawingPointerType,
+  ) => {
     const currentBox = await canvas.boundingBox();
     expect(currentBox).not.toBeNull();
     if (!currentBox) {
@@ -73,14 +179,15 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
 
     const x = currentBox.x + currentBox.width * xFraction;
     const y = currentBox.y + currentBox.height * yFraction;
-    await dispatchPointer('pointerdown', x, y, 1, 'mouse');
-    await dispatchPointer('pointerup', x, y, 0, 'mouse');
+    await dispatchPointer('pointerdown', x, y, 1, pointerType);
+    await dispatchPointer('pointerup', x, y, 0, pointerType);
     return { xFraction, yFraction };
   };
 
   const drawCanvasLineFraction = async (
     start: { x: number; y: number },
     end: { x: number; y: number },
+    pointerType: PointerKind = drawingPointerType,
   ) => {
     const currentBox = await canvas.boundingBox();
     expect(currentBox).not.toBeNull();
@@ -92,9 +199,9 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     const startY = currentBox.y + currentBox.height * start.y;
     const endX = currentBox.x + currentBox.width * end.x;
     const endY = currentBox.y + currentBox.height * end.y;
-    await dispatchPointer('pointerdown', startX, startY, 1);
-    await dispatchPointer('pointermove', endX, endY, 1);
-    await dispatchPointer('pointerup', endX, endY, 0);
+    await dispatchPointer('pointerdown', startX, startY, 1, pointerType);
+    await dispatchPointer('pointermove', endX, endY, 1, pointerType);
+    await dispatchPointer('pointerup', endX, endY, 0, pointerType);
   };
 
   const brushColor = { r: 31, g: 41, b: 55 };
@@ -110,10 +217,10 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   const endX = box.x + box.width * strokeEnd.x;
   const endY = box.y + box.height * strokeEnd.y;
 
-  await dispatchPointer('pointerdown', startX, startY, 1);
-  await dispatchPointer('pointermove', midX, midY, 1);
-  await dispatchPointer('pointermove', endX, endY, 1);
-  await dispatchPointer('pointerup', endX, endY, 0);
+  await dispatchPointer('pointerdown', startX, startY, 1, drawingPointerType);
+  await dispatchPointer('pointermove', midX, midY, 1, drawingPointerType);
+  await dispatchPointer('pointermove', endX, endY, 1, drawingPointerType);
+  await dispatchPointer('pointerup', endX, endY, 0, drawingPointerType);
 
   const isPaintedPoint = async (
     xFraction: number,
@@ -206,6 +313,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await drawCanvasLineFraction(
     { x: 0.2, y: gridSample.y },
     { x: 0.38, y: gridSample.y },
+    drawingPointerType,
   );
   expect(await isPaintedPoint(gridSample.x, gridSample.y, brushColor)).toBe(true);
 
@@ -217,6 +325,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   await drawCanvasLineFraction(
     { x: 0.2, y: gridSample.y },
     { x: 0.38, y: gridSample.y },
+    drawingPointerType,
   );
   expect(await isGridGuidePixel(gridSample.x, gridSample.y)).toBe(true);
 
@@ -249,7 +358,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     'false',
   );
 
-  const firstPoint = await clickCanvasFraction(0.22, 0.5);
+  const firstPoint = await clickCanvasFraction(0.22, 0.5, drawingPointerType);
   const reflectedXFraction = 1 - firstPoint.xFraction;
   const noHintGuideXFraction = (firstPoint.xFraction + 0.5) / 2;
 
@@ -272,7 +381,7 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     '거리 힌트를 켰습니다. 점 탐구 모드일 때 가이드가 보여집니다.',
   );
 
-  const secondPoint = await clickCanvasFraction(0.26, 0.64);
+  const secondPoint = await clickCanvasFraction(0.26, 0.64, drawingPointerType);
   await expect(page.getByRole('status')).toContainText(
     '원본점과 대칭점은 대칭축에서 같은 거리에 있습니다.',
   );

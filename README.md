@@ -33,6 +33,8 @@ npm run build
 npm run e2e
 ```
 
+`npm run e2e`는 desktop/tablet/mobile 프로젝트에서 동일 시나리오를 실행해 반응형 및 터치 동작을 함께 검증합니다.
+
 ## 수업 운영 팁
 
 1. 세로 대칭축에서 간단한 선을 그리고 양쪽 점이 대칭축에서 같은 거리에 있는지 묻습니다.
