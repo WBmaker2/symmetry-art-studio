@@ -210,6 +210,9 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
   const strokeStart = { x: 0.235, y: 0.415 };
   const strokeMid = { x: 0.315, y: 0.485 };
   const strokeEnd = { x: 0.385, y: 0.365 };
+  const penVerificationStrokeStart = { x: 0.65, y: 0.72 };
+  const penVerificationStrokeMid = { x: 0.73, y: 0.8 };
+  const penVerificationStrokeEnd = { x: 0.81, y: 0.68 };
   const startX = box.x + box.width * strokeStart.x;
   const startY = box.y + box.height * strokeStart.y;
   const midX = box.x + box.width * strokeMid.x;
@@ -307,8 +310,37 @@ test('student can draw, switch axes, and clear the studio', async ({ page }, tes
 
   expect(isPainted).toBe(true);
   expect(reflectedIsPainted).toBe(true);
-
   await expect(page.getByRole('status')).toContainText('획을 완성했습니다');
+
+  if (isTablet) {
+    await page.getByRole('button', { name: '전체 지우기' }).click();
+    await expect(page.getByRole('status')).toContainText(
+      '한 번 더 누르면 캔버스를 비웁니다',
+    );
+    await page.getByRole('button', { name: '전체 지우기 확인' }).click();
+    await expect(page.getByRole('status')).toContainText('캔버스를 비웠습니다');
+
+    await drawCanvasLineFraction(
+      penVerificationStrokeStart,
+      penVerificationStrokeMid,
+      'pen',
+    );
+    await drawCanvasLineFraction(
+      penVerificationStrokeMid,
+      penVerificationStrokeEnd,
+      'pen',
+    );
+    expect(
+      await isPaintedPoint(penVerificationStrokeStart.x, penVerificationStrokeStart.y, brushColor),
+    ).toBe(true);
+    expect(
+      await isPaintedPoint(
+        1 - penVerificationStrokeStart.x,
+        penVerificationStrokeStart.y,
+        brushColor,
+      ),
+    ).toBe(true);
+  }
 
   await drawCanvasLineFraction(
     { x: 0.2, y: gridSample.y },
