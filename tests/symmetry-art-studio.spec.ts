@@ -48,14 +48,28 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
     return { xFraction, yFraction };
   };
 
-  await page.getByRole('button', { name: '격자 보기' }).click();
-  await expect(page.getByRole('button', { name: '격자 보기' })).toHaveAttribute(
-    'aria-pressed',
-    'false',
-  );
+  const drawCanvasLineFraction = async (
+    start: { x: number; y: number },
+    end: { x: number; y: number },
+  ) => {
+    const currentBox = await canvas.boundingBox();
+    expect(currentBox).not.toBeNull();
+    if (!currentBox) {
+      throw new Error('Canvas bounding box was not available');
+    }
+
+    const startX = currentBox.x + currentBox.width * start.x;
+    const startY = currentBox.y + currentBox.height * start.y;
+    const endX = currentBox.x + currentBox.width * end.x;
+    const endY = currentBox.y + currentBox.height * end.y;
+    await dispatchPointer('pointerdown', startX, startY, 1);
+    await dispatchPointer('pointermove', endX, endY, 1);
+    await dispatchPointer('pointerup', endX, endY, 0);
+  };
 
   const brushColor = { r: 31, g: 41, b: 55 };
   const reflectedPointColor = { r: 15, g: 118, b: 110 };
+  const gridSample = { x: 280 / 960, y: 480 / 960 };
   const strokeStart = { x: 0.235, y: 0.415 };
   const strokeMid = { x: 0.315, y: 0.485 };
   const strokeEnd = { x: 0.385, y: 0.365 };
@@ -123,6 +137,30 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
       { xFraction, yFraction, expectedColor },
     );
 
+  const isGridGuidePixel = async (xFraction: number, yFraction: number) =>
+    canvas.evaluate(
+      (element, { xFraction, yFraction }) => {
+        const canvas = element as HTMLCanvasElement;
+        const context = canvas.getContext('2d');
+        if (!context) {
+          return false;
+        }
+
+        const x = Math.round(canvas.width * xFraction);
+        const y = Math.round(canvas.height * yFraction);
+        const pixel = context.getImageData(x, y, 1, 1).data;
+
+        return (
+          pixel[3] > 0 &&
+          pixel[0] < 245 &&
+          pixel[1] < 245 &&
+          pixel[2] > 230 &&
+          pixel[2] > pixel[0]
+        );
+      },
+      { xFraction, yFraction },
+    );
+
   const isPainted = await isPaintedPoint(strokeStart.x, strokeStart.y, brushColor);
   const reflectedIsPainted = await isPaintedPoint(
     1 - strokeStart.x,
@@ -134,6 +172,29 @@ test('student can draw, switch axes, and clear the studio', async ({ page }) => 
   expect(reflectedIsPainted).toBe(true);
 
   await expect(page.getByRole('status')).toContainText('획을 완성했습니다');
+
+  await drawCanvasLineFraction(
+    { x: 0.2, y: gridSample.y },
+    { x: 0.38, y: gridSample.y },
+  );
+  expect(await isPaintedPoint(gridSample.x, gridSample.y, brushColor)).toBe(true);
+
+  await page.getByRole('button', { name: '지우개' }).click();
+  await expect(page.getByRole('button', { name: '지우개' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await drawCanvasLineFraction(
+    { x: 0.2, y: gridSample.y },
+    { x: 0.38, y: gridSample.y },
+  );
+  expect(await isGridGuidePixel(gridSample.x, gridSample.y)).toBe(true);
+
+  await page.getByRole('button', { name: '검정' }).click();
+  await expect(page.getByRole('button', { name: '지우개' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
 
   await page.getByRole('radio', { name: '대각선 대칭축' }).click();
   await expect(page.getByRole('status')).toContainText('대각선 대칭축');

@@ -184,8 +184,10 @@ export default function CanvasStage({
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.lineWidth = isEraser ? segment.brushSize * 1.35 : segment.brushSize;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = isEraser ? '#fffdf8' : segment.color;
+      ctx.globalCompositeOperation = isEraser
+        ? 'destination-out'
+        : 'source-over';
+      ctx.strokeStyle = isEraser ? '#000000' : segment.color;
 
       for (const [startPoint, endPoint] of pairs) {
         ctx.beginPath();
@@ -277,30 +279,42 @@ export default function CanvasStage({
     ctx.fillStyle = '#fffdf8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    drawGrid(ctx);
+    const actionsWithActive: CanvasAction[] = activeStrokeRef.current
+      ? [...actionsRef.current, activeStrokeRef.current]
+      : actionsRef.current;
+    const artworkCanvas = canvas.ownerDocument.createElement('canvas');
+    artworkCanvas.width = canvas.width;
+    artworkCanvas.height = canvas.height;
+    const artworkCtx = artworkCanvas.getContext('2d');
 
-    const drawAction = (action: CanvasAction, actionIndex: number) => {
+    const drawArtworkAction = (
+      layerCtx: CanvasRenderingContext2D,
+      action: CanvasAction,
+    ) => {
       if (action.kind === 'stroke') {
         for (const segment of action.segments) {
-          drawSegment(ctx, segment);
+          drawSegment(layerCtx, segment);
         }
-        return;
       }
+    };
 
+    const drawPointActionLayer = (action: CanvasAction, actionIndex: number) => {
       if (action.kind === 'point') {
-        const pointIndex = actionsRef.current
+        const pointIndex = actionsWithActive
           .slice(0, actionIndex)
           .reduce((acc, prevAction) => acc + Number(prevAction.kind === 'point'), 0);
         drawPointAction(ctx, action, getPointLabel(pointIndex), shouldShowDistanceGuides);
       }
     };
 
-    actionsRef.current.forEach(drawAction);
+    drawGrid(ctx);
 
-    if (activeStrokeRef.current) {
-      drawAction(activeStrokeRef.current, actionsRef.current.length);
+    if (artworkCtx) {
+      actionsWithActive.forEach((action) => drawArtworkAction(artworkCtx, action));
+      ctx.drawImage(artworkCanvas, 0, 0);
     }
 
+    actionsWithActive.forEach(drawPointActionLayer);
     drawAxis(ctx);
   }, [drawAxis, drawGrid, drawSegment, drawPointAction, shouldShowDistanceGuides]);
 

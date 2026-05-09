@@ -5,6 +5,7 @@ export type CanvasContextMock = {
   beginPath: ReturnType<typeof vi.fn>;
   clearRect: ReturnType<typeof vi.fn>;
   fillRect: ReturnType<typeof vi.fn>;
+  drawImage: ReturnType<typeof vi.fn>;
   fill: ReturnType<typeof vi.fn>;
   arc: ReturnType<typeof vi.fn>;
   fillText: ReturnType<typeof vi.fn>;
@@ -22,6 +23,7 @@ export const canvasContext: CanvasContextMock = {
   beginPath: vi.fn(),
   clearRect: vi.fn(),
   fillRect: vi.fn(),
+  drawImage: vi.fn(),
   fill: vi.fn(),
   arc: vi.fn(),
   fillText: vi.fn(),
